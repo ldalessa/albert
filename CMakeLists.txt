@@ -15,6 +15,7 @@ include(FetchContent)
 FetchContent_Declare(ce
   GIT_REPOSITORY     git@github.com:ldalessa/ce.git
   GIT_TAG            main)
+set(CE_BUILD_TESTING OFF)
 FetchContent_MakeAvailable(ce)
 
 add_library(albert_lib INTERFACE)

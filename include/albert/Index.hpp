@@ -9,17 +9,13 @@
 
 namespace albert
 {
-  // enum index_t : char32_t {};
-
-  enum index_t : char {};
-
-  template <char32_t... Is>
+  template <char... Is>
   struct Index
   {
     using index_tag = void;
   };
 
-  template <char32_t... As, char32_t... Bs>
+  template <char... As, char... Bs>
   constexpr inline auto operator+(Index<As...>, Index<Bs...>)
     -> Index<As..., Bs...>
   {
@@ -31,14 +27,14 @@ namespace albert
   {
     using tensor_index_tag = void;
 
-    ce::cvector<index_t, N> is;
+    ce::cvector<char, N> is;
 
     constexpr TensorIndex() = default;
 
-    template <char32_t... Is>
+    template <char... Is>
     constexpr explicit TensorIndex(Index<Is...>)
-        : is { std::in_place, index_t(Is)... }
     {
+      (is.emplace_back(Is), ...);
       static_assert(N == sizeof...(Is));
     }
 
@@ -57,16 +53,16 @@ namespace albert
       return is.size();
     }
 
-    constexpr auto count(index_t c) const -> std::size_t
+    constexpr auto count(char c) const -> std::size_t
     {
       std::size_t n = 0;
-      for (index_t i : is) {
+      for (char i : is) {
         n += c == i;
       }
       return n;
     }
 
-    constexpr void push(index_t c)
+    constexpr void push(char c)
     {
       is.push_back(c);
     }
@@ -74,7 +70,7 @@ namespace albert
     constexpr auto exclusive() const -> TensorIndex
     {
       TensorIndex b;
-      for (index_t a : is) {
+      for (char a : is) {
         if (count(a) == 1) {
           b.push(a);
         }
@@ -85,7 +81,7 @@ namespace albert
     constexpr auto repeated() const -> TensorIndex
     {
       TensorIndex b;
-      for (index_t a : is) {
+      for (char a : is) {
         if (count(a) > 1) {
           b.push(a);
         }
@@ -103,7 +99,7 @@ namespace albert
     }
   };
 
-  template <char32_t... Is>
+  template <char... Is>
   TensorIndex(Index<Is...>) -> TensorIndex<sizeof...(Is)>;
 
   template <std::size_t N, std::size_t M>
@@ -123,35 +119,35 @@ namespace albert
     -> TensorIndex<N + M>
   {
     TensorIndex<N + M> out;
-    for (index_t c : a) out.push(c);
-    for (index_t c : b) out.push(c);
+    for (char c : a) out.push(c);
+    for (char c : b) out.push(c);
     return out;
   }
 
-  // template <std::size_t N, std::size_t M>
-  // constexpr inline auto operator-(TensorIndex<N> a, TensorIndex<M> b)
-  //   -> TensorIndex<N>
-  // {
-  //   TensorIndex<N> difference;
-  //   for (index_t c : a) {
-  //     if (b.count(c) == 0) {
-  //       difference.push(c);
-  //     }
-  //   }
-  //   return difference;
-  // }
+  template <std::size_t N, std::size_t M>
+  constexpr inline auto operator-(TensorIndex<N> a, TensorIndex<M> b)
+    -> TensorIndex<N>
+  {
+    TensorIndex<N> difference;
+    for (char c : a) {
+      if (b.count(c) == 0) {
+        difference.push(c);
+      }
+    }
+    return difference;
+  }
 
   template <std::size_t N, std::size_t M>
   constexpr inline auto operator^(TensorIndex<N> a, TensorIndex<M> b)
     -> TensorIndex<N + M>
   {
     TensorIndex<N + M> disjoint_union;
-    for (index_t c : a) {
+    for (char c : a) {
       if (b.count(c) == 0) {
         disjoint_union.push(c);
       }
     }
-    for (index_t c : b) {
+    for (char c : b) {
       if (a.count(c) == 0) {
         disjoint_union.push(c);
       }
@@ -163,7 +159,7 @@ namespace albert
   //   TensorIndex<std::min(a.size(), b.size())>
   // {
   //   TensorIndex<std::min(a.size(), b.size())> intersection;
-  //   for (index_t c : a) {
+  //   for (char c : a) {
   //     if (b.count(c) != 0) {
   //       intersection.push(c);
   //     }
@@ -171,6 +167,12 @@ namespace albert
   //   return intersection;
   // }
 
+  template <std::size_t N, std::size_t M>
+  constexpr inline auto is_permutation(TensorIndex<N> a, TensorIndex<M> b)
+    -> bool
+  {
+    return (a - b).size() == 0 and (b - a).size() == 0;
+  }
 }
 
 #endif // ALBERT_INCLUDE_INDEX_HPP

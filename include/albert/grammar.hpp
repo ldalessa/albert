@@ -90,7 +90,7 @@ namespace albert
 
     constexpr auto δ(is_index auto i, is_index auto j)
     {
-      constexpr Index index = (j + j);
+      constexpr Index index = (i + j);
       constexpr TensorIndex jindex(index);
       return Delta<jindex> {};
     }

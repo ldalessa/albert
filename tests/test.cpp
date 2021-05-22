@@ -12,5 +12,7 @@ int main() {
   auto d = ((a(i) + b(i)) * δ(i,j)) * b(j) + 1;
   auto e = pow(sin(tanh(exp(D(symmetrize(D((a(i) + b(i))(j),i) * c), i)))), d);
 
+  c = d;
+
   // print<decltype(d)> _;
 }
