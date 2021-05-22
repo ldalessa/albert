@@ -102,6 +102,15 @@ namespace albert
       }
       return b;
     }
+
+    constexpr auto reverse() const -> TensorIndex
+    {
+      TensorIndex b;
+      for (int i = 0, e = size(); i < e; ++i) {
+        b.push(is[e - i - 1]);
+      }
+      return b;
+    }
   };
 
   template <char32_t... Is>

@@ -1,6 +1,7 @@
 #ifndef ALBERT_INCLUDE_ALBERT_HPP
 #define ALBERT_INCLUDE_ALBERT_HPP
 
+#include "albert/cmath.hpp"
 #include "albert/Index2.hpp"
 #include <concepts>
 
@@ -49,8 +50,11 @@ namespace albert
   template <class T>
   concept is_tree = is_tree_node<T> || std::integral<T> || std::floating_point<T>;
 
+  template <class T>
+  struct Bindable;
+
   template <class A, is_tensor_index auto index>
-  struct Bind
+  struct Bind : Bindable<Bind<A, index>>
   {
     using tree_node_tag = void;
     using unary_node_tag = void;
@@ -92,6 +96,24 @@ namespace albert
     {
       constexpr Index all = (is + ... + Index<>{});
       constexpr TensorIndex index(all);
+      return Bind<T, index>{*static_cast<T*>(this)};
+    }
+
+    template <is_tensor_index auto index>
+    constexpr auto rebind() const & -> decltype(auto)
+    {
+      return Bind<T const, index>{*static_cast<T const*>(this)};
+    }
+
+    template <is_tensor_index auto index>
+    constexpr auto rebind() && -> decltype(auto)
+    {
+      return Bind<T, index>{std::move(*static_cast<T*>(this))};
+    }
+
+    template <is_tensor_index auto index>
+    constexpr auto rebind() & -> decltype(auto)
+    {
       return Bind<T, index>{*static_cast<T*>(this)};
     }
   };
@@ -219,6 +241,47 @@ namespace albert
     }
   };
 
+  template <class A, CMathTag tag>
+  struct CMath : Bindable<CMath<A, tag>>
+  {
+    static_assert(!has_immediate<tag>);
+    using tree_node_tag = void;
+    using unary_node_tag = void;
+
+    A a;
+
+    constexpr CMath(A a, cmath_tag<tag>)
+        : a(std::move(a))
+    {
+    }
+
+    constexpr static auto outer()
+    {
+      return outer_v<A>;
+    }
+  };
+
+  template <class A, class B, CMathTag tag>
+  struct CMath2 : Bindable<CMath<A, tag>>
+  {
+    using tree_node_tag = void;
+    using binary_node_tag = void;
+
+    A a;
+    B b;
+
+    constexpr CMath2(A a, B b, cmath_tag<tag>)
+        : a(std::move(a))
+        , b(std::move(b))
+    {
+    }
+
+    constexpr static auto outer()
+    {
+      return outer_v<A>;
+    }
+  };
+
   template <class T>
   struct Literal
   {
@@ -244,7 +307,7 @@ namespace albert
   };
 
   template <TensorIndex<2> index>
-  struct Delta
+  struct Delta : Bindable<Delta<index>>
   {
     using tree_node_tag = void;
     using leaf_node_tag = void;
@@ -261,7 +324,7 @@ namespace albert
   };
 
   template <is_tensor_index auto index>
-  struct Epsilon
+  struct Epsilon : Bindable<Delta<index>>
   {
     using tree_node_tag = void;
     using leaf_node_tag = void;
@@ -361,14 +424,157 @@ namespace albert
   {
     constexpr Index index = (j + j);
     constexpr TensorIndex jindex(index);
-    return Delta<jindex>{};
+    return Delta<jindex> {};
   }
 
   constexpr auto ε(is_index auto i, is_index auto... is)
   {
     constexpr Index index = (i + ... + is);
     constexpr TensorIndex jindex(index);
-    return Epsilon<jindex>{};
+    return Epsilon<jindex> {};
+  }
+
+  template <is_tree A>
+  constexpr auto symmetrize(A&& a)
+  {
+    auto&& b = promote(FWD(a));
+    constexpr TensorIndex j = std::remove_cvref_t<decltype(b)>::outer().reverse();
+    return promote(1) / promote(2) * (b + b.template rebind<j>());
+  }
+
+  template <is_tree A, is_tree B>
+  constexpr auto fmin(A&& a, B&& b)
+  {
+    assert(a.rank() == 0);
+    return CMath2(promote(FWD(a)), promote(FWD(b)), cmath_tag_v<FMIN>);
+  }
+
+  template <is_tree A, is_tree B>
+  constexpr auto fmax(A&& a, B&& b)
+  {
+    assert(a.rank() == 0);
+    return CMath2(promote(FWD(a)), promote(FWD(b)), cmath_tag_v<FMAX>);
+  }
+
+  template <is_tree A, is_tree B>
+  constexpr auto pow(A&& a, B&& b)
+  {
+    return CMath2(promote(FWD(a)), promote(FWD(b)), cmath_tag_v<POW>);
+  }
+
+  template <is_tree A>
+  constexpr auto abs(A&& a)
+  {
+    assert(a.rank() == 0);
+    return CMath(promote(FWD(a)), cmath_tag_v<ABS>);
+  }
+
+  template <is_tree A>
+  constexpr auto exp(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<EXP>);
+  }
+
+  template <is_tree A>
+  constexpr auto log(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<LOG>);
+  }
+
+  template <is_tree A>
+  constexpr auto sqrt(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<SQRT>);
+  }
+
+    template <is_tree A>
+    constexpr auto sin(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<SIN>);
+  }
+
+  template <is_tree A>
+  constexpr auto cos(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<COS>);
+  }
+
+  template <is_tree A>
+  constexpr auto tan(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<TAN>);
+  }
+
+  template <is_tree A>
+  constexpr auto asin(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<ASIN>);
+  }
+
+  template <is_tree A>
+  constexpr auto acos(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<ACOS>);
+  }
+
+  template <is_tree A>
+  constexpr auto atan(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<ATAN>);
+  }
+
+  template <is_tree A>
+  constexpr auto atan2(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<ATAN2>);
+  }
+
+  template <is_tree A>
+  constexpr auto sinh(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<SINH>);
+  }
+
+  template <is_tree A>
+  constexpr auto cosh(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<COSH>);
+  }
+
+  template <is_tree A>
+  constexpr auto tanh(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<TANH>);
+  }
+
+  template <is_tree A>
+  constexpr auto asinh(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<ASINH>);
+  }
+
+  template <is_tree A>
+  constexpr auto acosh(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<ACOSH>);
+  }
+
+  template <is_tree A>
+  constexpr auto atanh(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<ATANH>);
+  }
+
+  template <is_tree A>
+  constexpr auto ceil(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<CEIL>);
+  }
+
+  template <is_tree A>
+  constexpr auto floor(A&& a)
+  {
+    return CMath(promote(FWD(a)), cmath_tag_v<FLOOR>);
   }
 }
 
