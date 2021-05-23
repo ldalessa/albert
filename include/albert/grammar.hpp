@@ -7,9 +7,8 @@
 #include "albert/concepts.hpp"
 #include "albert/expressions.hpp"
 #include "albert/traits.hpp"
+#include "albert/utils.hpp"
 #include <concepts>
-
-#define FWD(x) static_cast<decltype(x)&&>(x)
 
 namespace albert
 {
@@ -30,7 +29,7 @@ namespace albert
       constexpr auto promote(A&& a)
       {
         static_assert(rank_v<A> == 0);
-        return FWD(a)();
+        return Bind<std::remove_reference_t<A>, TensorIndex<0>{}>(FWD(a));
       }
 
       constexpr auto promote(std::integral auto&& i)

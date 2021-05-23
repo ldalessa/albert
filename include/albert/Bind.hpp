@@ -2,6 +2,7 @@
 #define ALBERT_INCLUDE_BIND_HPP
 
 #include "albert/Index.hpp"
+#include "albert/ScalarIndex.hpp"
 #include "albert/concepts.hpp"
 #include "albert/traits.hpp"
 #include <utility>
@@ -31,28 +32,68 @@ namespace albert
     {
       return index.exclusive();
     }
+
+    constexpr static auto dim() -> std::size_t
+    {
+      return dim_v<A>;
+    }
+
+    constexpr auto evaluate(ScalarIndex<rank_v<Bind>> const& i) const
+      -> auto requires(index.repeated().size() != 0)
+    {
+      constexpr TensorIndex outer = index.exclusive();
+      constexpr TensorIndex inner = index.repeated();
+      constexpr TensorIndex   all = outer + inner;
+      constexpr std::size_t     N = dim();
+      constexpr std::size_t  Rank = outer.size();
+      constexpr std::size_t     I = inner.rank();
+      static_assert(Rank + I == rank_v<A>);
+
+      auto rhs = [&](auto const& i) {
+        return a.evaluate(select<all, index>(i));
+      };
+
+      ScalarIndex<Rank + I> j(i);
+      decltype(rhs(j)) temp{};
+      do {
+        temp += rhs(j);
+      } while (carry_sum_inc<N, Rank>(j));
+      return temp;
+    }
+
+    constexpr auto evaluate(ScalarIndex<rank_v<Bind>> i) const -> decltype(auto)
+      requires(index.repeated().size() == 0)
+    {
+      return a.evaluate(i);
+    }
+
+    constexpr auto evaluate(ScalarIndex<rank_v<Bind>> i) -> decltype(auto)
+      requires(index.repeated().size() == 0)
+    {
+      return a.evaluate(i);
+    }
   };
 
   template <class T>
   struct Bindable
   {
-    constexpr auto operator()(is_index auto... is) const & -> decltype(auto)
+    constexpr auto operator()(is_index auto i, is_index auto... is) const & -> decltype(auto)
     {
-      constexpr Index all = (is + ... + Index<>{});
+      constexpr Index all = (i + ... + is);
       constexpr TensorIndex index(all);
       return Bind<T const, index>{*static_cast<T const*>(this)};
     }
 
-    constexpr auto operator()(is_index auto... is) && -> decltype(auto)
+    constexpr auto operator()(is_index auto i, is_index auto... is) && -> decltype(auto)
     {
-      constexpr Index all = (is + ... + Index<>{});
+      constexpr Index all = (i + ... + is);
       constexpr TensorIndex index(all);
       return Bind<T, index>{std::move(*static_cast<T*>(this))};
     }
 
-    constexpr auto operator()(is_index auto... is) & -> decltype(auto)
+    constexpr auto operator()(is_index auto i, is_index auto... is) & -> decltype(auto)
     {
-      constexpr Index all = (is + ... + Index<>{});
+      constexpr Index all = (i + ... + is);
       constexpr TensorIndex index(all);
       return Bind<T, index>{*static_cast<T*>(this)};
     }

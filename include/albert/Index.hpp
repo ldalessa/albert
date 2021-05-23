@@ -2,6 +2,7 @@
 #define ALBERT_INCLUDE_INDEX_HPP
 
 #include "albert/concepts.hpp"
+#include "albert/utils.hpp"
 #include <ce/cvector.hpp>
 #include <array>
 #include <concepts>
@@ -38,6 +39,11 @@ namespace albert
       static_assert(N == sizeof...(Is));
     }
 
+    constexpr auto operator[](std::size_t i) const -> char
+    {
+      return is[i];
+    }
+
     constexpr auto begin() const -> decltype(auto)
     {
       return std::begin(is);
@@ -51,6 +57,16 @@ namespace albert
     constexpr auto size() const -> std::size_t
     {
       return is.size();
+    }
+
+    constexpr auto index_of(char c) const -> std::size_t
+    {
+      for (int i = 0; i < N; ++i) {
+        if (is[i] == c) {
+          return i;
+        }
+      }
+      __builtin_abort(); // could not find char
     }
 
     constexpr auto count(char c) const -> std::size_t
@@ -103,19 +119,19 @@ namespace albert
   TensorIndex(Index<Is...>) -> TensorIndex<sizeof...(Is)>;
 
   template <std::size_t N, std::size_t M>
-  constexpr inline auto operator==(TensorIndex<N> a, TensorIndex<M> b)
+  constexpr inline auto operator==(TensorIndex<N> const& a, TensorIndex<M> const& b)
   {
     return a.is == b.is;
   }
 
   template <std::size_t N, std::size_t M>
-  constexpr inline auto operator<=>(TensorIndex<N> a, TensorIndex<M> b)
+  constexpr inline auto operator<=>(TensorIndex<N> const& a, TensorIndex<M> const& b)
   {
     return a.is <=> b.is;
   }
 
   template <std::size_t N, std::size_t M>
-  constexpr inline auto operator+(TensorIndex<N> a, TensorIndex<M> b)
+  constexpr inline auto operator+(TensorIndex<N> const& a, TensorIndex<M> const& b)
     -> TensorIndex<N + M>
   {
     TensorIndex<N + M> out;
@@ -125,7 +141,7 @@ namespace albert
   }
 
   template <std::size_t N, std::size_t M>
-  constexpr inline auto operator-(TensorIndex<N> a, TensorIndex<M> b)
+  constexpr inline auto operator-(TensorIndex<N> const& a, TensorIndex<M> const& b)
     -> TensorIndex<N>
   {
     TensorIndex<N> difference;
@@ -138,7 +154,7 @@ namespace albert
   }
 
   template <std::size_t N, std::size_t M>
-  constexpr inline auto operator^(TensorIndex<N> a, TensorIndex<M> b)
+  constexpr inline auto operator^(TensorIndex<N> const& a, TensorIndex<M> const& b)
     -> TensorIndex<N + M>
   {
     TensorIndex<N + M> disjoint_union;
@@ -155,20 +171,21 @@ namespace albert
     return disjoint_union;
   }
 
-  // constexpr inline auto operator&(is_tensor_index auto a, is_tensor_index auto b)
-  //   TensorIndex<std::min(a.size(), b.size())>
-  // {
-  //   TensorIndex<std::min(a.size(), b.size())> intersection;
-  //   for (char c : a) {
-  //     if (b.count(c) != 0) {
-  //       intersection.push(c);
-  //     }
-  //   }
-  //   return intersection;
-  // }
+  template <std::size_t N, std::size_t M>
+  constexpr inline auto operator&(TensorIndex<N> const& a, TensorIndex<M> const& b)
+    -> TensorIndex<min(N, M)>
+  {
+    TensorIndex<min(N, M)> intersection;
+    for (char c : a) {
+      if (b.count(c) != 0) {
+        intersection.push(c);
+      }
+    }
+    return intersection;
+  }
 
   template <std::size_t N, std::size_t M>
-  constexpr inline auto is_permutation(TensorIndex<N> a, TensorIndex<M> b)
+  constexpr inline auto is_permutation(TensorIndex<N> const& a, TensorIndex<M> const& b)
     -> bool
   {
     return (a - b).size() == 0 and (b - a).size() == 0;
