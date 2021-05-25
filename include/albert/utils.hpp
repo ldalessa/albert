@@ -26,7 +26,7 @@ namespace albert
 
   template <auto...> struct nttp_args {};
   template <auto... args>
-  constexpr inline nttp_args<args...> nttp_pack = {};
+  constexpr inline nttp_args<args...> nttp = {};
 }
 
 #endif // ALBERT_INCLUDE_UTILS_HPP

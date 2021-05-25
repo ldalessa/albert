@@ -8,6 +8,7 @@
 
 namespace albert
 {
+  /// A scalar index represents a runtime tensor index.
   template <int M>
   struct ScalarIndex
   {
@@ -89,7 +90,7 @@ namespace albert
     template <is_tensor_index auto from, is_tensor_index auto to>
     constexpr friend auto select(ScalarIndex const& in) -> ScalarIndex<to.size()>
     {
-      return in.select(nttp_pack<from, to>);
+      return in.select(nttp<from, to>);
     }
 
     template <int N, int n = 0>

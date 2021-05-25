@@ -45,7 +45,7 @@ namespace albert
     {
       static_assert(outer_v<B>.repeated().size() == 0);
       static_assert(outer_v<B>.scalars().size() == 0);
-      albert::evaluate(Bind(*this, {}, nttp_pack<outer_v<B>>), FWD(b));
+      albert::evaluate(Bind(*this, {}, nttp<outer_v<B>>), FWD(b));
     }
 
     template <is_tree B>
@@ -54,7 +54,7 @@ namespace albert
     {
       static_assert(outer_v<B>.repeated().size() == 0);
       static_assert(outer_v<B>.scalars().size() == 0);
-      albert::evaluate(Bind(*this, {}, nttp_pack<outer_v<B>>), FWD(b));
+      albert::evaluate(Bind(*this, {}, nttp<outer_v<B>>), FWD(b));
       return *this;
     }
 
@@ -62,7 +62,7 @@ namespace albert
     requires(rank_v<B> == Rank)
     constexpr auto operator=(B&& b) && -> Tensor&&
     {
-      albert::evaluate(Bind(std::move(*this), {}, nttp_pack<outer_v<B>>), FWD(b));
+      albert::evaluate(Bind(std::move(*this), {}, nttp<outer_v<B>>), FWD(b));
       return std::move(*this);
     }
 
