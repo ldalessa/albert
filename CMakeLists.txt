@@ -12,6 +12,11 @@ endif (ALBERT_SANITIZE)
 # -----------------------------------------------------------------------------
 include(FetchContent)
 
+FetchContent_Declare(fmt
+  GIT_REPOSITORY     https://github.com/fmtlib/fmt.git
+  GIT_TAG            master)
+FetchContent_MakeAvailable(fmt)
+
 FetchContent_Declare(ce
   GIT_REPOSITORY     git@github.com:ldalessa/ce.git
   GIT_TAG            main)
@@ -20,7 +25,7 @@ FetchContent_MakeAvailable(ce)
 
 add_library(albert_lib INTERFACE)
 target_include_directories(albert_lib INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
-target_link_libraries(albert_lib INTERFACE ce::ce)
+target_link_libraries(albert_lib INTERFACE ce::ce fmt::fmt)
 target_compile_features(albert_lib INTERFACE cxx_std_20)
 add_library(albert::albert ALIAS albert_lib)
 

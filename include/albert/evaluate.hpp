@@ -10,6 +10,7 @@
 namespace albert
 {
   template <is_tree A, is_tree B>
+  [[gnu::noinline]]
   constexpr auto evaluate(A&& a, B&& b)
   {
     static_assert(is_permutation(outer_v<A>, outer_v<B>));
@@ -17,8 +18,8 @@ namespace albert
 
     constexpr TensorIndex l = outer_v<A>;
     constexpr TensorIndex r = outer_v<B>;
-    constexpr std::size_t Rank = rank_v<A>;
-    constexpr std::size_t N = max(dim_v<A>, dim_v<B>);
+    constexpr int Rank = rank_v<A>;
+    constexpr int N = max(dim_v<A>, dim_v<B>);
 
     ScalarIndex<Rank> i;
     do {

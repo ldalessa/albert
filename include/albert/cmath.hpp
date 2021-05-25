@@ -60,7 +60,7 @@ namespace albert
       return outer_v<A>;
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return dim_v<A>;
     }
@@ -116,7 +116,7 @@ namespace albert
       return outer_v<A>;
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return dim_v<A>;
     }

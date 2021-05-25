@@ -7,11 +7,11 @@
 
 namespace albert
 {
-  template <std::size_t Rank, std::size_t N>
+  template <int Rank, int N>
   struct RowMajor
   {
-    constexpr static std::array<std::size_t, Rank> stride = [] {
-      std::size_t stride[Rank];
+    constexpr static std::array<int, Rank> stride = [] {
+      int stride[Rank];
       stride[Rank - 1] = 1;
       for (int i = Rank - 1; i > 0; --i) {
         stride[i - 1] = stride[i] * N;
@@ -19,8 +19,7 @@ namespace albert
       return std::to_array(stride);
     }();
 
-    constexpr auto operator()(std::integral auto... is) const
-      -> std::size_t
+    constexpr auto operator()(std::integral auto... is) const -> int
       requires(sizeof...(is) == Rank)
     {
       int sum = 0;
@@ -29,14 +28,27 @@ namespace albert
       return sum;
     }
 
-    constexpr auto operator()(ScalarIndex<Rank> const& index) const
-      -> std::size_t
+    constexpr auto operator()(ScalarIndex<Rank> const& index) const -> int
     {
       int sum = 0;
       for (int i = 0; i < Rank; ++i) {
         sum += index[i] * stride[i];
       }
       return sum;
+    }
+  };
+
+  template <>
+  struct RowMajor<0, 0>
+  {
+    constexpr auto operator()() const -> int
+    {
+      return 0;
+    }
+
+    constexpr auto operator()(ScalarIndex<0> const&) const -> int
+    {
+      return 0;
     }
   };
 }

@@ -9,7 +9,7 @@ namespace albert
   inline constexpr auto outer_v = std::remove_cvref_t<T>::outer();
 
   template <class T>
-  inline constexpr std::size_t rank_v = [] {
+  inline constexpr int rank_v = [] {
     if constexpr (requires { std::remove_cvref_t<T>::rank(); }) {
       return std::remove_cvref_t<T>::rank();
     }
@@ -19,7 +19,7 @@ namespace albert
   }();
 
   template <class T>
-  inline constexpr std::size_t dim_v = std::remove_cvref_t<T>::dim();
+  inline constexpr int dim_v = std::remove_cvref_t<T>::dim();
 }
 
 #endif // ALBERT_INCLUDE_TRAITS_HPP

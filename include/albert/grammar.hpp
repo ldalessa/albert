@@ -76,7 +76,7 @@ namespace albert
     template <is_tree A, is_tree B>
     constexpr auto operator/(A&& a, B&& b)
     {
-      return Ratio { detail::promote(FWD(a)), detail::promote(FWD(b)) };
+      return Product { detail::promote(FWD(a)), Inverse { detail::promote(FWD(b)) }};
     }
 
     template <is_tree A>
@@ -107,6 +107,12 @@ namespace albert
       auto&& b = detail::promote(FWD(a));
       constexpr TensorIndex j = outer_v<decltype(b)>.reverse();
       return detail::promote(1) / detail::promote(2) * (b + b.template rebind<j>());
+    }
+
+    template <is_tree A>
+    constexpr auto inv(A&& a)
+    {
+      return Inverse { detail::promote(FWD(a)) };
     }
 
     template <is_tree A, is_tree B>

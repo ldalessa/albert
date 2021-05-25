@@ -5,24 +5,28 @@
 
 namespace albert
 {
-  constexpr std::size_t pow(std::size_t M, std::size_t D)
+  constexpr int pow(int M, int D)
   {
-    std::size_t out = 1;
+    int out = 1;
     for (int i = 0; i < D; i++) {
       out *= M;
     }
     return out;
   }
 
-  constexpr std::size_t max(std::size_t a, std::size_t b)
+  constexpr int max(int a, int b)
   {
     return (a < b) ? b : a;
   }
 
-  constexpr std::size_t min(std::size_t a, std::size_t b)
+  constexpr int min(int a, int b)
   {
     return (a < b) ? a : b;
   }
+
+  template <auto...> struct nttp_args {};
+  template <auto... args>
+  constexpr inline nttp_args<args...> nttp_pack = {};
 }
 
 #endif // ALBERT_INCLUDE_UTILS_HPP

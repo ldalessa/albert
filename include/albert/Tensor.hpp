@@ -7,26 +7,26 @@
 #include "albert/evaluate.hpp"
 #include "albert/traits.hpp"
 #include "albert/utils.hpp"
+#include <fmt/ranges.h>
 
 namespace albert
 {
-  template <class T, std::size_t Rank, std::size_t N>
+  template <class T, int Rank, int N>
   struct Tensor : Bindable<Tensor<T, Rank, N>>
   {
     using tensor_tag = void;
     using Bindable<Tensor<T, Rank, N>>::operator();
 
-    constexpr static RowMajor<Rank, N> _map;
+    constexpr static RowMajor<Rank, N> _map = {};
 
     T _data[pow(N, Rank)];
 
-
-    constexpr static auto rank() -> std::size_t
+    constexpr static auto rank() -> int
     {
       return Rank;
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return N;
     }
@@ -39,18 +39,22 @@ namespace albert
     {
     }
 
-    template <class B>
-    requires(is_tree<B> and not is_tensor<B> and rank_v<B> == Rank)
+    template <is_tree B>
+    requires(not is_tensor<B> and not std::convertible_to<B, T> and rank_v<B> == Rank)
     constexpr Tensor(B&& b)
     {
-      albert::evaluate(Bind<Tensor, outer_v<B>>(*this), FWD(b));
+      static_assert(outer_v<B>.repeated().size() == 0);
+      static_assert(outer_v<B>.scalars().size() == 0);
+      albert::evaluate(Bind(*this, {}, nttp_pack<outer_v<B>>), FWD(b));
     }
 
     template <is_tree B>
     requires(rank_v<B> == Rank)
     constexpr auto operator=(B&& b) & -> Tensor&
     {
-      albert::evaluate(Bind<Tensor, outer_v<B>>(*this), FWD(b));
+      static_assert(outer_v<B>.repeated().size() == 0);
+      static_assert(outer_v<B>.scalars().size() == 0);
+      albert::evaluate(Bind(*this, {}, nttp_pack<outer_v<B>>), FWD(b));
       return *this;
     }
 
@@ -58,20 +62,20 @@ namespace albert
     requires(rank_v<B> == Rank)
     constexpr auto operator=(B&& b) && -> Tensor&&
     {
-      albert::evaluate(Bind<Tensor, outer_v<B>>(std::move(*this)), FWD(b));
+      albert::evaluate(Bind(std::move(*this), {}, nttp_pack<outer_v<B>>), FWD(b));
       return std::move(*this);
     }
 
-    constexpr auto operator()(std::integral auto i, std::integral auto... is) const
-      -> decltype(auto)
-      requires(sizeof...(is) + 1 == Rank)
+    template <class... Is> requires(all_integral_index<Is...>)
+    constexpr auto operator()(std::integral auto i, Is... is) const &
+      -> decltype(auto) requires(sizeof...(is) + 1 == Rank)
     {
       return _data[_map(i, is...)];
     }
 
-    constexpr auto operator()(std::integral auto i, std::integral auto... is)
-      -> decltype(auto)
-      requires(sizeof...(is) + 1 == Rank)
+    template <class... Is> requires(all_integral_index<Is...>)
+    constexpr auto operator()(std::integral auto i, Is... is) &
+      -> decltype(auto) requires(sizeof...(is) + 1 == Rank)
     {
       return _data[_map(i, is...)];
     }
@@ -79,14 +83,14 @@ namespace albert
     constexpr auto evaluate(ScalarIndex<Rank> const& index) const
       -> decltype(auto)
     {
-      puts("hello");
+      fmt::print("rhs {}\n", index);
       return _data[_map(index)];
     }
 
     constexpr auto evaluate(ScalarIndex<Rank> const& index)
       -> decltype(auto)
     {
-      puts("world");
+      fmt::print("lhs {}\n", index);
       return _data[_map(index)];
     }
   };

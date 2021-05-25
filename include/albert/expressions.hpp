@@ -6,6 +6,7 @@
 #include "albert/ScalarIndex.hpp"
 #include "albert/cmath.hpp"
 #include "albert/concepts.hpp"
+#include "albert/solver.hpp"
 #include "albert/utils.hpp"
 #include <utility>
 
@@ -35,7 +36,7 @@ namespace albert
       return outer_v<A>;
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return max(dim_v<A>, dim_v<B>);
     }
@@ -86,7 +87,7 @@ namespace albert
   Diff(A, B) -> Diff<A, B>;
 
   template <is_tree A, is_tree B>
-  struct Contraction
+  struct Product : Bindable<Product<A, B>>
   {
     using tree_node_tag = void;
     using binary_node_tag = void;
@@ -94,7 +95,7 @@ namespace albert
     A a;
     B b;
 
-    constexpr Contraction(A a, B b)
+    constexpr Product(A a, B b)
         : a(std::move(a))
         , b(std::move(b))
     {
@@ -109,19 +110,10 @@ namespace albert
       return c;
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return max(dim_v<A>, dim_v<B>);
     }
-  };
-
-  template <is_tree A, is_tree B>
-  struct Product : Contraction<A, B>, Bindable<Product<A, B>>
-  {
-    using Contraction<A, B>::Contraction;
-    using Contraction<A, B>::a;
-    using Contraction<A, B>::b;
-    using Contraction<A, B>::dim;
 
     constexpr auto evaluate(ScalarIndex<rank_v<Product>> const& i) const
       -> auto
@@ -131,9 +123,9 @@ namespace albert
       constexpr TensorIndex     r = outer_v<B>;
       constexpr TensorIndex inner = l & r;
       constexpr TensorIndex   all = outer + inner;
-      constexpr std::size_t     N = dim();
-      constexpr std::size_t  Rank = outer.size();
-      constexpr std::size_t     I = inner.size();
+      constexpr int     N = dim();
+      constexpr int  Rank = outer.size();
+      constexpr int     I = inner.size();
 
       auto rhs = [&](auto const& index) {
         return a.evaluate(select<all, l>(index)) * b.evaluate(select<all, r>(index));
@@ -147,45 +139,6 @@ namespace albert
       return temp;
     }
   };
-
-  template <is_tree A, is_tree B>
-  Product(A, B) -> Product<A, B>;
-
-  template <is_tree A, is_tree B>
-  struct Ratio : Contraction<A, B>
-  {
-    using Contraction<A, B>::Contraction;
-    using Contraction<A, B>::a;
-    using Contraction<A, B>::b;
-    using Contraction<A, B>::dim;
-
-    constexpr auto evaluate(ScalarIndex<rank_v<Ratio>> const& i) const
-    {
-      __builtin_abort();
-      constexpr TensorIndex outer = outer_v<Ratio>;
-      constexpr TensorIndex     l = outer_v<A>;
-      constexpr TensorIndex     r = outer_v<B>;
-      constexpr TensorIndex inner = l & r;
-      constexpr TensorIndex   all = outer + inner;
-      constexpr std::size_t     N = dim();
-      constexpr std::size_t  Rank = outer.size();
-      constexpr std::size_t     I = inner.size();
-
-      auto rhs = [&](auto const& index) {
-        return a.evaluate(select<all, l>(index)) * b.evaluate(select<all, r>(index));
-      };
-
-      ScalarIndex<Rank + I> j(i);
-      decltype(rhs(j)) temp{};
-      do {
-        temp += rhs(j);
-      } while (carry_sum_inc<N, Rank>(j));
-      return temp;
-    }
-  };
-
-  template <is_tree A, is_tree B>
-  Ratio(A, B) -> Ratio<A, B>;
 
   template <is_tree A>
   struct Negate : Bindable<Negate<A>>
@@ -205,7 +158,7 @@ namespace albert
       return outer_v<A>;
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return dim_v<A>;
     }
@@ -234,12 +187,68 @@ namespace albert
       return (outer_v<A> + index).exclusive();
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return dim_v<A>;
     }
 
     constexpr auto evaluate(ScalarIndex<rank_v<Partial>> const&) const;
+  };
+
+  template <is_tree A>
+  struct Inverse : Bindable<Inverse<A>>
+  {
+    using tree_node_tag = void;
+    using unary_node_tag = void;
+
+    A a;
+
+    constexpr Inverse(A a)
+        : a(std::move(a))
+    {
+    }
+
+    constexpr static auto outer()
+    {
+      return outer_v<A>;
+    }
+
+    constexpr static auto dim() -> int
+    {
+      return dim_v<A>;
+    }
+
+    constexpr auto evaluate(ScalarIndex<rank_v<Inverse>> const&) const;
+  };
+
+  template <is_tree A> requires(rank_v<A> == 0)
+  struct Inverse<A> : Bindable<Inverse<A>>
+  {
+    using tree_node_tag = void;
+    using unary_node_tag = void;
+
+    A a;
+
+    constexpr Inverse(A a)
+        : a(std::move(a))
+    {
+    }
+
+    constexpr static auto outer()
+    {
+      return outer_v<A>;
+    }
+
+    constexpr static auto dim() -> int
+    {
+      return dim_v<A>;
+    }
+
+    constexpr auto evaluate(ScalarIndex<0> const& i) const
+    {
+      using T = decltype(a.evaluate(i));
+      return T(1) / a.evaluate(i);
+    }
   };
 
   template <class T>
@@ -255,12 +264,12 @@ namespace albert
     {
     }
 
-    constexpr static auto rank() -> std::size_t
+    constexpr static auto rank() -> int
     {
       return 0;
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return 0;
     }
@@ -283,12 +292,12 @@ namespace albert
     using tree_node_tag = void;
     using leaf_node_tag = void;
 
-    constexpr static auto rank() -> std::size_t
+    constexpr static auto rank() -> int
     {
       return 2;
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return 0;
     }
@@ -311,12 +320,12 @@ namespace albert
     using tree_node_tag = void;
     using leaf_node_tag = void;
 
-    constexpr static auto rank() -> std::size_t
+    constexpr static auto rank() -> int
     {
       return index.size();
     }
 
-    constexpr static auto dim() -> std::size_t
+    constexpr static auto dim() -> int
     {
       return 0;
     }

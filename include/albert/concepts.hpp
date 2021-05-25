@@ -37,9 +37,15 @@ namespace albert
                      std::floating_point<T>);
 
   template <class T>
-  concept is_index = requires {
+  concept is_index = std::integral<T> or requires {
     typename std::remove_cvref_t<T>::index_tag;
   };
+
+  template<typename... Ts>
+  concept all_index = (is_index<Ts> && ...);
+
+  template<typename... Ts>
+  concept all_integral_index = all_index<Ts...> && (std::integral<Ts> && ...);
 
   template <class T>
   concept is_tensor_index = requires {

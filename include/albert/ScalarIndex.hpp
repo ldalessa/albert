@@ -3,68 +3,99 @@
 
 #include "albert/concepts.hpp"
 #include "albert/traits.hpp"
-#include <array>
+#include "albert/utils.hpp"
+#include <ce/cvector.hpp>
 
 namespace albert
 {
-  template <std::size_t Rank>
+  template <int M>
   struct ScalarIndex
   {
-    std::array<int, Rank> _data = {};
+    ce::cvector<int, M> _data = { M };
 
     constexpr ScalarIndex() = default;
 
-    constexpr static auto size() -> std::size_t
+    template <int B>
+    constexpr ScalarIndex(ScalarIndex<B> const& b)
     {
-      return Rank;
+      std::copy_n(b.begin(), b.size(), _data.begin());
     }
 
-    template <std::size_t O>
-    requires (O < Rank)
-      constexpr ScalarIndex(ScalarIndex<O> const& b)
+    template <int B>
+    constexpr ScalarIndex(ce::cvector<int, B> const& b)
     {
-      for (int i = 0; i < O; ++i) {
-        _data[i] = b[i];
-      }
+      std::copy_n(b.begin(), b.size(), _data.begin());
     }
 
-    constexpr auto operator[](std::size_t i) const -> int
+    constexpr static auto size() -> int
     {
-      assert(i < Rank);
+      return M;
+    }
+
+    constexpr auto begin() const -> decltype(auto)
+    {
+      return _data.begin();
+    }
+
+    constexpr auto end() const -> decltype(auto)
+    {
+      return _data.end();
+    }
+
+    constexpr auto operator[](int i) const -> decltype(auto)
+    {
       return _data[i];
     }
 
-    constexpr auto operator[](std::size_t i) -> int&
+    constexpr auto operator[](int i) -> decltype(auto)
     {
-      assert(i < Rank);
       return _data[i];
     }
 
     template <is_tensor_index auto from, is_tensor_index auto to>
-    constexpr friend auto select(ScalarIndex const& in)
-      -> ScalarIndex<to.size()>
+    constexpr auto select(nttp_args<from, to>) const -> ScalarIndex<to.size()>
     {
       static_assert(from.size() == size());
-      static_assert(from.repeated().size() == 0);
-      constexpr std::array<int, to.size()> map = [] {
-        std::array<int, to.size()> map;
-        for (int i = 0; i < to.size(); ++i) {
-          map[i] = from.index_of(to[i]);
+      constexpr int A = to.size();
+      constexpr ce::cvector map = []
+      {
+        // We use `j` to keep track of anonymous index matching.
+        auto index_of = [j=0](char c) mutable {
+          if (c != '\0') {
+            return from.index_of(c);
+          }
+          for (int i = 0, k = j++; i < from.size(); ++i) {
+            if (from[i] == '\0' and 0 == k--) {
+              return i;
+            }
+          }
+          __builtin_abort();
+        };
+
+        ce::cvector<int, A> map;
+        for (char c : to) {
+          map.push_back(index_of(c));
         }
         return map;
       }();
 
-      ScalarIndex<to.size()> out;
-      for (int i = 0; i < map.size(); ++i) {
-        out[i] = in[map[i]];
+      ScalarIndex<A> out;
+      for (int i = 0; i < A; ++i) {
+        out[i] = _data[map[i]];
       }
       return out;
     }
 
-    template <std::size_t N, std::size_t n = 0>
+    template <is_tensor_index auto from, is_tensor_index auto to>
+    constexpr friend auto select(ScalarIndex const& in) -> ScalarIndex<to.size()>
+    {
+      return in.select(nttp_pack<from, to>);
+    }
+
+    template <int N, int n = 0>
     constexpr friend bool carry_sum_inc(ScalarIndex& index)
     {
-      for (int i = n; i < Rank; ++i) {
+      for (int i = n; i < M; ++i) {
         if (++index[i] < N) {
           return true;                          // no carry
         }
@@ -73,6 +104,17 @@ namespace albert
       return false;                             // overflow
     }
   };
+
+  template <int A, int B>
+  constexpr auto operator+(ScalarIndex<A> const& a, ScalarIndex<B> const& b)
+    -> ScalarIndex<A + B>
+  {
+    ScalarIndex<A + B> c;
+    int i = 0;
+    for (int a : a) c[i++] = a;
+    for (int b : b) c[i++] = b;
+    return c;
+  }
 }
 
 #endif // ALBERT_INCLUDE_SCALAR_INDEX_HPP
