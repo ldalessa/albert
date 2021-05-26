@@ -7,7 +7,6 @@
 #include "albert/evaluate.hpp"
 #include "albert/traits.hpp"
 #include "albert/utils.hpp"
-#include <fmt/ranges.h>
 
 namespace albert
 {
@@ -50,32 +49,30 @@ namespace albert
 
     template <is_tree B>
     requires(rank_v<B> == Rank)
-      constexpr auto operator=(B&& b) & -> decltype(auto)
+    constexpr auto operator=(B&& b) & -> decltype(auto)
     {
-      static_assert(outer_v<B>.repeated().size() == 0);
-      static_assert(outer_v<B>.scalars().size() == 0);
       return std::move(Bind(*this, {}, nttp<outer_v<B>>) = FWD(b));
     }
 
     template <is_tree B>
     requires(rank_v<B> == Rank)
-      constexpr auto operator=(B&& b) && -> decltype(auto)
+    constexpr auto operator=(B&& b) && -> decltype(auto)
     {
-      static_assert(outer_v<B>.repeated().size() == 0);
-      static_assert(outer_v<B>.scalars().size() == 0);
       return std::move(Bind(std::move(*this), {}, nttp<outer_v<B>>) = FWD(b));
     }
 
-    template <class... Is> requires(all_integral_index<Is...>)
+    template <class... Is>
+    requires(all_integral_index<Is...> and sizeof...(Is) + 1 == Rank)
     constexpr auto operator()(std::integral auto i, Is... is) const &
-      -> decltype(auto) requires(sizeof...(is) + 1 == Rank)
+      -> decltype(auto)
     {
       return _data[_map(i, is...)];
     }
 
-    template <class... Is> requires(all_integral_index<Is...>)
+    template <class... Is>
+    requires(all_integral_index<Is...> and sizeof...(Is) + 1 == Rank)
     constexpr auto operator()(std::integral auto i, Is... is) &
-      -> decltype(auto) requires(sizeof...(is) + 1 == Rank)
+      -> decltype(auto)
     {
       return _data[_map(i, is...)];
     }
@@ -83,14 +80,12 @@ namespace albert
     constexpr auto evaluate(ScalarIndex<Rank> const& index) const
       -> decltype(auto)
     {
-      fmt::print("rhs {}\n", index);
       return _data[_map(index)];
     }
 
     constexpr auto evaluate(ScalarIndex<Rank> const& index)
       -> decltype(auto)
     {
-      fmt::print("lhs {}\n", index);
       return _data[_map(index)];
     }
   };
