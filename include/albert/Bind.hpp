@@ -16,20 +16,59 @@ namespace albert
   template <class T>
   struct Bindable;
 
+  /// The bind node.
+  ///
+  /// A bind node associates some subtree with an Einstein notation index
+  /// mapping, potentially including self-contraction, and/or a set of
+  /// projected indices.
+  ///
+  /// Bind nodes may have full subtrees or just leafs (like tensor nodes).
+  ///
+  /// Bind nodes look like:
+  ///
+  ///     is_index i, j, k, l;                     // indices
+  ///     is_tensor A;                             // actual matrix tensor
+  ///     is_tree B;                               // matrix tree
+  ///     is_tree C;                               // vector tree
+  ///     auto bind = A(i, j);                     // basic bind
+  ///     auto bind = A(i, i);                     // trace
+  ///     auto bind = A(1, i);                     // projection
+  ///     auto bind = A(1, 0);                     // fully projected
+  ///
+  ///     auto product = A(i, j) * B(j);           // normal vector product
+  ///     auto product = A(i, k) * B(k, j);        // normal matrix product
+  ///     auto product = A(i, j) * B(i, j);        // inner product
+  ///     auto product = A(i, j) * B(k, l);        // kronecker product
+  ///     auto product = A(k, i) * B(j, k);        // some odd contraction
+  ///     auto product = A(i, j) * B(j, k) * C(k); // expression
+  ///     auto product = (A(i, j) + B(j, i)) / 2;  // symmetric transformation
+  ///
+  ///     A(i, j) = B(j, i);                       // transpose assignment
+  ///     A(1, j) = B(j, 0);                       // projection assignment
+  ///     A(0, i) = B(i, j) * C(j);                // projection assignment
+  ///     A(0, 0) = 42;                            // scalar assignment
+  ///
+  /// @param     A The type of the subtree.
+  /// @param index The index binding to the subtree.
   template <is_tree A, is_tensor_index auto index>
   struct Bind : Bindable<Bind<A, index>>
   {
+    /// Subscribe to tree concepts.
+    /// @{
     using tree_node_tag = void;
     using unary_node_tag = void;
+    /// @}
 
-    constexpr static int M = index.scalars().size();
+    constexpr static int M = index.scalars().size(); //!< number of projected indices
 
-    A a;
-    ScalarIndex<M> _scalars;
+    A a;                                        //!< subtree
+    ScalarIndex<M> _scalars;                    //!< projected indices
 
-    constexpr Bind(Bind const&) = default;
-    constexpr Bind(Bind&&) = default;
-
+    /// Construct a bind node for a subtree.
+    ///
+    /// @param       a The subtree we're binding.
+    /// @param scalars Scalars associated with projections (if any).
+    /// @param       ? Helper to specify the `index` CNTTP.
     constexpr Bind(A a, ce::cvector<int, M> const& scalars, nttp_args<index>)
         : a(std::move(a))
         , _scalars(scalars)
@@ -39,15 +78,26 @@ namespace albert
       static_assert(l == r);
     }
 
+    /// Default copy and move will prevent implicit operator= generation, which
+    /// means that the `is_tree` version will match _all_ instances of
+    /// Bind::operator=.
+    /// @{
+    constexpr Bind(Bind const&) = default;
+    constexpr Bind(Bind&&) = default;
+    /// @}
+
     template <is_tree B>
     constexpr Bind& operator=(B&& b)
     {
       constexpr TensorIndex l = outer_v<Bind>;
       constexpr TensorIndex r = outer_v<B>;
       static_assert(is_permutation(l, r));
-      return albert::evaluate(*this, FWD(b));
+      return albert::evaluate(*this, FWD(b), [](auto&& a, auto&&b) {
+        FWD(a) = FWD(b);
+      });
     }
 
+    ///
     constexpr static auto outer()
     {
       return index.exclusive();

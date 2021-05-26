@@ -9,9 +9,9 @@
 
 namespace albert
 {
-  template <is_tree A, is_tree B>
+  template <is_tree A, is_tree B, class Op>
   [[gnu::noinline]]
-  constexpr auto evaluate(A&& a, B&& b) -> decltype(auto)
+  constexpr auto evaluate(A&& a, B&& b, Op&& op) -> decltype(auto)
   {
     static_assert(is_permutation(outer_v<A>, outer_v<B>));
     static_assert(dim_v<A> == 0 || dim_v<B> == 0 || dim_v<A> == dim_v<B>);
@@ -24,10 +24,10 @@ namespace albert
     ScalarIndex<Rank> i;
     do {
       if constexpr (l == r) {
-        a.evaluate(i) = b.evaluate(i);
+        op(a.evaluate(i), b.evaluate(i));
       }
       else {
-        a.evaluate(i) = b.evaluate(select<l, r>(i));
+        op(a.evaluate(i), b.evaluate(select<l, r>(i)));
       }
     } while (carry_sum_inc<N>(i));
 
