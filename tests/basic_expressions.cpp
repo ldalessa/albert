@@ -83,6 +83,153 @@ constexpr static bool subtraction(type_args<T> = {})
 }
 
 template <class T>
+constexpr static bool contraction(type_args<T> = {})
+{
+  bool passed = true;
+
+  albert::Tensor<T, 1, 3> a = { 1, 2, 3 };
+  T dot = a(i) * a(i);
+  passed &= ALBERT_CHECK( dot == 14 );
+  passed &= ALBERT_CHECK( a(i) * a(i) == 14 );
+
+  albert::Tensor<T, 2, 3> A = {
+    1, 2, 3,
+    4, 5, 6,
+    7, 8, 9
+  };
+
+  T dot2 = A(i,j) * A(i,j);
+  passed &= ALBERT_CHECK( dot2 == 285 );
+  passed &= ALBERT_CHECK( A(i,j) * A(i,j) == 285 );
+
+  T dot3 = A(i,j) * A(j,i);
+  passed &= ALBERT_CHECK( dot3 == 261 );
+  passed &= ALBERT_CHECK( A(i,j) * A(j,i) == 261 );
+
+  albert::Tensor Aa = A(i,j) * a(j);
+  passed &= ALBERT_CHECK( Aa(0) == 14 );
+  passed &= ALBERT_CHECK( Aa(1) == 32 );
+  passed &= ALBERT_CHECK( Aa(2) == 50 );
+
+  albert::Tensor Ata = A(j,i) * a(j);
+  passed &= ALBERT_CHECK( Ata(0) == 30 );
+  passed &= ALBERT_CHECK( Ata(1) == 36 );
+  passed &= ALBERT_CHECK( Ata(2) == 42 );
+
+  albert::Tensor<T, 2, 3> A2 = {
+    30,  36,  42,
+    66,  81,  96,
+    102, 126, 150
+  };
+
+  albert::Tensor B = A(i,k) * A(k,j);
+
+  passed &= ALBERT_CHECK( B[0] == A2[0] );
+  passed &= ALBERT_CHECK( B[1] == A2[1] );
+  passed &= ALBERT_CHECK( B[2] == A2[2] );
+  passed &= ALBERT_CHECK( B[3] == A2[3] );
+  passed &= ALBERT_CHECK( B[4] == A2[4] );
+  passed &= ALBERT_CHECK( B[5] == A2[5] );
+  passed &= ALBERT_CHECK( B[6] == A2[6] );
+  passed &= ALBERT_CHECK( B[7] == A2[7] );
+  passed &= ALBERT_CHECK( B[8] == A2[8] );
+
+  albert::Tensor kronecker = A(i,j) * A(k,l);
+
+  passed &= ALBERT_CHECK( kronecker(0,0,0,0) == A(0,0) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(0,0,0,1) == A(0,0) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(0,0,0,2) == A(0,0) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(0,0,1,0) == A(0,0) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(0,0,1,1) == A(0,0) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(0,0,1,2) == A(0,0) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(0,0,2,0) == A(0,0) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(0,0,2,1) == A(0,0) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(0,0,2,2) == A(0,0) * A(2,2) );
+
+  passed &= ALBERT_CHECK( kronecker(0,1,0,0) == A(0,1) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(0,1,0,1) == A(0,1) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(0,1,0,2) == A(0,1) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(0,1,1,0) == A(0,1) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(0,1,1,1) == A(0,1) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(0,1,1,2) == A(0,1) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(0,1,2,0) == A(0,1) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(0,1,2,1) == A(0,1) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(0,1,2,2) == A(0,1) * A(2,2) );
+
+  passed &= ALBERT_CHECK( kronecker(0,2,0,0) == A(0,2) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(0,2,0,1) == A(0,2) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(0,2,0,2) == A(0,2) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(0,2,1,0) == A(0,2) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(0,2,1,1) == A(0,2) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(0,2,1,2) == A(0,2) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(0,2,2,0) == A(0,2) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(0,2,2,1) == A(0,2) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(0,2,2,2) == A(0,2) * A(2,2) );
+
+  passed &= ALBERT_CHECK( kronecker(1,0,0,0) == A(1,0) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(1,0,0,1) == A(1,0) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(1,0,0,2) == A(1,0) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(1,0,1,0) == A(1,0) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(1,0,1,1) == A(1,0) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(1,0,1,2) == A(1,0) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(1,0,2,0) == A(1,0) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(1,0,2,1) == A(1,0) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(1,0,2,2) == A(1,0) * A(2,2) );
+
+  passed &= ALBERT_CHECK( kronecker(1,1,0,0) == A(1,1) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(1,1,0,1) == A(1,1) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(1,1,0,2) == A(1,1) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(1,1,1,0) == A(1,1) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(1,1,1,1) == A(1,1) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(1,1,1,2) == A(1,1) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(1,1,2,0) == A(1,1) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(1,1,2,1) == A(1,1) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(1,1,2,2) == A(1,1) * A(2,2) );
+
+  passed &= ALBERT_CHECK( kronecker(1,2,0,0) == A(1,2) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(1,2,0,1) == A(1,2) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(1,2,0,2) == A(1,2) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(1,2,1,0) == A(1,2) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(1,2,1,1) == A(1,2) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(1,2,1,2) == A(1,2) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(1,2,2,0) == A(1,2) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(1,2,2,1) == A(1,2) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(1,2,2,2) == A(1,2) * A(2,2) );
+
+  passed &= ALBERT_CHECK( kronecker(2,0,0,0) == A(2,0) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(2,0,0,1) == A(2,0) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(2,0,0,2) == A(2,0) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(2,0,1,0) == A(2,0) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(2,0,1,1) == A(2,0) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(2,0,1,2) == A(2,0) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(2,0,2,0) == A(2,0) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(2,0,2,1) == A(2,0) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(2,0,2,2) == A(2,0) * A(2,2) );
+
+  passed &= ALBERT_CHECK( kronecker(2,1,0,0) == A(2,1) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(2,1,0,1) == A(2,1) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(2,1,0,2) == A(2,1) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(2,1,1,0) == A(2,1) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(2,1,1,1) == A(2,1) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(2,1,1,2) == A(2,1) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(2,1,2,0) == A(2,1) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(2,1,2,1) == A(2,1) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(2,1,2,2) == A(2,1) * A(2,2) );
+
+  passed &= ALBERT_CHECK( kronecker(2,2,0,0) == A(2,2) * A(0,0) );
+  passed &= ALBERT_CHECK( kronecker(2,2,0,1) == A(2,2) * A(0,1) );
+  passed &= ALBERT_CHECK( kronecker(2,2,0,2) == A(2,2) * A(0,2) );
+  passed &= ALBERT_CHECK( kronecker(2,2,1,0) == A(2,2) * A(1,0) );
+  passed &= ALBERT_CHECK( kronecker(2,2,1,1) == A(2,2) * A(1,1) );
+  passed &= ALBERT_CHECK( kronecker(2,2,1,2) == A(2,2) * A(1,2) );
+  passed &= ALBERT_CHECK( kronecker(2,2,2,0) == A(2,2) * A(2,0) );
+  passed &= ALBERT_CHECK( kronecker(2,2,2,1) == A(2,2) * A(2,1) );
+  passed &= ALBERT_CHECK( kronecker(2,2,2,2) == A(2,2) * A(2,2) );
+
+  return passed;
+}
+
+template <class T>
 constexpr static bool projection(type_args<T> = {})
 {
   bool passed = true;
@@ -267,6 +414,7 @@ constexpr static bool tests(type_args<T> type = {})
   passed &= bind(type);
   passed &= addition(type);
   passed &= subtraction(type);
+  passed &= contraction(type);
   passed &= projection(type);
   passed &= trace(type);
   passed &= transposition(type);
