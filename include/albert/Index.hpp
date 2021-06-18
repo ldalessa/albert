@@ -5,6 +5,8 @@
 
 namespace albert
 {
+  constexpr const char projected_index_id = '\0';
+
   template <char... Is>
   requires(sizeof...(Is) > 0)
   struct Index
@@ -15,7 +17,7 @@ namespace albert
   template <class>
   struct to_index_type
   {
-    using type = Index<'\0'>;
+    using type = Index<projected_index_id>;
   };
 
   template <char I>

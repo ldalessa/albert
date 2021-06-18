@@ -23,9 +23,14 @@ FetchContent_Declare(ce
 set(CE_BUILD_TESTING OFF)
 FetchContent_MakeAvailable(ce)
 
+FetchContent_Declare(tag_invoke_wrapper
+  GIT_REPOSITORY     https://github.com/ldalessa/tag_invoke_wrapper.git
+  GIT_TAG            main)
+FetchContent_MakeAvailable(tag_invoke_wrapper)
+
 add_library(albert_lib INTERFACE)
 target_include_directories(albert_lib INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
-target_link_libraries(albert_lib INTERFACE ce::ce fmt::fmt)
+target_link_libraries(albert_lib INTERFACE ce::ce fmt::fmt tag_invoke_wrapper::tag_invoke)
 target_compile_features(albert_lib INTERFACE cxx_std_20)
 add_library(albert::albert ALIAS albert_lib)
 

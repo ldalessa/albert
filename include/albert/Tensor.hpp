@@ -2,30 +2,50 @@
 #define ALBERT_INCLUDE_TENSOR_HPP
 
 #include "albert/Bind.hpp"
-#include "albert/RowMajor.hpp"
+#include "albert/TensorStorage.hpp"
+#include "albert/TensorLayout.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
-#include "albert/traits.hpp"
 #include "albert/utils.hpp"
 
 namespace albert
 {
-  template <class T, int Rank, int N>
-  struct Tensor : Bindable<Tensor<T, Rank, N>>
+  template <
+    class T,
+    int Order,
+    int N,
+    template <int, int> class Layout = RowMajor,
+    template <class, int, int> class Storage = DenseStorage
+    >
+  struct Tensor : Bindable<Tensor<T, Order, N, Layout, Storage>>
   {
-    using tensor_tag = void;
-    using Bindable<Tensor<T, Rank, N>>::operator();
+    using Bindable<Tensor<T, Order, N, Layout, Storage>>::operator();
 
-    constexpr static RowMajor<Rank, N> _map = {};
+    using scalar_type = T;
 
-    T _data[pow(N, Rank)];
+    constexpr static Layout<Order, N> _map = {};
 
-    constexpr static auto rank() -> int
+    Storage<T, Order, N> _data;
+
+    constexpr operator scalar_type() const requires(Order == 0)
     {
-      return Rank;
+      return _data[0];
     }
 
-    constexpr static auto dim() -> int
+    constexpr static auto size()
+      -> int
+    {
+      return pow(N, Order);
+    }
+
+    constexpr static auto order()
+      -> int
+    {
+      return Order;
+    }
+
+    constexpr static auto dim()
+      -> int
     {
       return N;
     }
@@ -33,62 +53,69 @@ namespace albert
     constexpr Tensor() = default;
 
     constexpr Tensor(std::convertible_to<T> auto t, std::convertible_to<T> auto... ts)
-      requires((sizeof...(ts) < pow(N, Rank)))
-        : _data { T(t), T(ts)... }
+      : _data { static_cast<T>(t), static_cast<T>(ts)... }
     {
+      static_assert(sizeof...(ts) < size());
     }
 
-    template <is_tree B>
-    requires(not is_tensor<B> and not std::convertible_to<B, T> and rank_v<B> == Rank)
+    /// Construct a tensor from an expression.
+    template <is_expression B>
     constexpr Tensor(B&& b)
     {
-      static_assert(outer_v<B>.repeated().size() == 0);
-      static_assert(outer_v<B>.scalars().size() == 0);
-      albert::evaluate(Bind(*this, {}, nttp<outer_v<B>>), FWD(b));
+      static_assert(order_v<B> == Order, "expression order does not match");
+      Bind(*this, {}, nttp<outer_v<B>>) = FWD(b);
     }
 
-    template <is_tree B>
-    requires(rank_v<B> == Rank)
-    constexpr auto operator=(B&& b) & -> decltype(auto)
+    template <is_expression B>
+    constexpr auto operator=(B&& b) &
+      -> decltype(auto)
     {
+      static_assert(order_v<B> == Order, "expression order does not match");
       return std::move(Bind(*this, {}, nttp<outer_v<B>>) = FWD(b));
     }
 
-    template <is_tree B>
-    requires(rank_v<B> == Rank)
-    constexpr auto operator=(B&& b) && -> decltype(auto)
+    template <is_expression B>
+    constexpr auto operator=(B&& b) &&
+      -> decltype(auto)
     {
+      static_assert(order_v<B> == Order, "expression order does not match");
       return std::move(Bind(std::move(*this), {}, nttp<outer_v<B>>) = FWD(b));
     }
 
-    template <class... Is>
-    requires(all_integral_index<Is...> and sizeof...(Is) + 1 == Rank)
-    constexpr auto operator()(std::integral auto i, Is... is) const &
+    /// Normal linear access.
+    constexpr auto operator[](std::integral auto i) const
       -> decltype(auto)
     {
-      return _data[_map(i, is...)];
+      return _data[i];
     }
 
-    template <class... Is>
-    requires(all_integral_index<Is...> and sizeof...(Is) + 1 == Rank)
-    constexpr auto operator()(std::integral auto i, Is... is) &
+    /// Normal linear access.
+    constexpr auto operator[](std::integral auto i)
       -> decltype(auto)
     {
-      return _data[_map(i, is...)];
+      return _data[i];
     }
 
-    constexpr auto evaluate(ScalarIndex<Rank> const& index) const
+    /// Multidimensional indexing via aggregate.
+    constexpr auto evaluate(ScalarIndex<Order> const& index) const
       -> decltype(auto)
     {
-      return _data[_map(index)];
+      int i = _map(index);
+      return _data[i];
     }
 
-    constexpr auto evaluate(ScalarIndex<Rank> const& index)
+    /// Multidimensional indexing via aggregate.
+    constexpr auto evaluate(ScalarIndex<Order> const& index)
       -> decltype(auto)
     {
-      return _data[_map(index)];
+      int i = _map(index);
+      return _data[i];
     }
   };
+
+  /// Infer a tensor type for an expression.
+  template <is_expression B>
+  Tensor(B) -> Tensor<scalar_type_t<B>, order_v<B>, dim_v<B>, RowMajor, DenseStorage>;
 }
 
 #endif // ALBERT_INCLUDE_TENSOR_HPP

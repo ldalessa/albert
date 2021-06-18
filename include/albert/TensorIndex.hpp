@@ -78,7 +78,7 @@ namespace albert
     {
       TensorIndex b;
       for (char c : is) {
-        if (c != '\0' and count(c) == 1) {
+        if (c != projected_index_id and count(c) == 1) {
           b.push(c);
         }
       }
@@ -89,22 +89,36 @@ namespace albert
     {
       TensorIndex b;
       for (char c : is) {
-        if (c != '\0' and count(c) > 1) {
+        if (c != projected_index_id and count(c) > 1 and b.count(c) == 0) {
           b.push(c);
         }
       }
       return b;
     }
 
-    constexpr auto scalars() const -> TensorIndex
+    constexpr auto n_repeated() const -> int
+    {
+      return repeated().size();
+    }
+
+    constexpr auto projected() const -> TensorIndex
     {
       TensorIndex b;
       for (char c : is) {
-        if (c == '\0') {
+        if (c == projected_index_id) {
           b.push(c);
         }
       }
       return b;
+    }
+
+    constexpr auto n_projected() const -> int
+    {
+      int n = 0;
+      for (char c : is) {
+        n += (c == projected_index_id);
+      }
+      return n;
     }
 
     constexpr auto reverse() const -> TensorIndex

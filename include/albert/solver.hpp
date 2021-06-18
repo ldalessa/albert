@@ -42,14 +42,14 @@
 
 namespace albert::solver
 {
-  /// Run the pivoting algorithm on a rank 2 tensor (i.e., matrix).
+  /// Run the pivoting algorithm on a order 2 tensor (i.e., matrix).
   ///
   /// The pivoting operation will restructure the matrix and thus we require a
-  /// "real" matrix as `A` rather than simply a rank 2 tensor expression.
+  /// "real" matrix as `A` rather than simply a order 2 tensor expression.
   ///
   /// @tparam           M The size of the matrix.
   ///
-  /// @param[in/out]    A The rank 2 tensor to pivot.
+  /// @param[in/out]    A The order 2 tensor to pivot.
   /// @param[out]    perm The permutation.
   /// @param[in]        j The column that we are processing.
   ///
@@ -84,7 +84,7 @@ namespace albert::solver
   ///
   /// @tparam           M The dimension of the matrix.
   ///
-  /// @param[in/out]    A The rank 2 tensor expression to factor.
+  /// @param[in/out]    A The order 2 tensor expression to factor.
   /// @param[out]    perm The permutation.
   ///
   /// @returns          0 If the operation succeeded.

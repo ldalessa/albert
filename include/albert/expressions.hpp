@@ -12,12 +12,9 @@
 
 namespace albert
 {
-  template <is_tree A, is_tree B>
+  template <is_expression A, is_expression B>
   struct Addition
   {
-    using tree_node_tag = void;
-    using binary_node_tag = void;
-
     A a;
     B b;
 
@@ -31,9 +28,9 @@ namespace albert
       static_assert(dim_v<A> == 0 || dim_v<B> == 0 || dim_v<A> == dim_v<B>);
     }
 
-    constexpr static auto outer()
+    constexpr static auto order() -> int
     {
-      return outer_v<A>;
+      return order_v<A>;
     }
 
     constexpr static auto dim() -> int
@@ -41,7 +38,12 @@ namespace albert
       return max(dim_v<A>, dim_v<B>);
     }
 
-    constexpr auto evaluate(ScalarIndex<rank_v<Addition>> const& i, auto&& op) const
+    constexpr static auto outer() -> is_tensor_index auto
+    {
+      return outer_v<A>;
+    }
+
+    constexpr auto evaluate(ScalarIndex<order_v<Addition>> const& i, auto&& op) const
     {
       constexpr TensorIndex l = outer_v<A>;
       constexpr TensorIndex r = outer_v<B>;
@@ -54,12 +56,20 @@ namespace albert
     }
   };
 
-  template <is_tree A, is_tree B>
+  template <is_expression A, is_expression B>
   struct Sum : Addition<A, B>, Bindable<Sum<A, B>>
   {
     using Addition<A, B>::Addition;
 
-    constexpr auto evaluate(ScalarIndex<rank_v<Sum>> const& i) const
+    using scalar_type = decltype(std::declval<scalar_type_t<A>>() + std::declval<scalar_type_t<B>>());
+
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type() const requires (order_v<Sum> == 0)
+    {
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr auto evaluate(ScalarIndex<order_v<Sum>> const& i) const
     {
       return Addition<A, B>::evaluate(i, [](auto&& a, auto&& b) {
         return FWD(a) + FWD(b);
@@ -67,15 +77,23 @@ namespace albert
     }
   };
 
-  template <is_tree A, is_tree B>
+  template <is_expression A, is_expression B>
   Sum(A, B) -> Sum<A, B>;
 
-  template <is_tree A, is_tree B>
+  template <is_expression A, is_expression B>
   struct Diff : Addition<A, B>, Bindable<Diff<A, B>>
   {
     using Addition<A, B>::Addition;
 
-    constexpr auto evaluate(ScalarIndex<rank_v<Diff>> const& i) const
+    using scalar_type = decltype(std::declval<scalar_type_t<A>>() - std::declval<scalar_type_t<B>>());
+
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type() const requires (order_v<Diff> == 0)
+    {
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr auto evaluate(ScalarIndex<order_v<Diff>> const& i) const
     {
       return Addition<A, B>::evaluate(i, [](auto&& a, auto&& b) {
         return FWD(a) - FWD(b);
@@ -83,14 +101,13 @@ namespace albert
     }
   };
 
-  template <is_tree A, is_tree B>
+  template <is_expression A, is_expression B>
   Diff(A, B) -> Diff<A, B>;
 
-  template <is_tree A, is_tree B>
+  template <is_expression A, is_expression B>
   struct Product : Bindable<Product<A, B>>
   {
-    using tree_node_tag = void;
-    using binary_node_tag = void;
+    using scalar_type = decltype(std::declval<scalar_type_t<A>>() * std::declval<scalar_type_t<B>>());
 
     A a;
     B b;
@@ -102,12 +119,15 @@ namespace albert
       static_assert(dim_v<A> == 0 || dim_v<B> == 0 || dim_v<A> == dim_v<B>);
     }
 
-    constexpr static auto outer()
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type() const requires (order_v<Product> == 0)
     {
-      constexpr TensorIndex a = outer_v<A>;
-      constexpr TensorIndex b = outer_v<B>;
-      constexpr TensorIndex c = a ^ b;
-      return c;
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr static auto order() -> int
+    {
+      return outer().size();
     }
 
     constexpr static auto dim() -> int
@@ -115,7 +135,15 @@ namespace albert
       return max(dim_v<A>, dim_v<B>);
     }
 
-    constexpr auto evaluate(ScalarIndex<rank_v<Product>> const& i) const
+    constexpr static auto outer() -> is_tensor_index auto
+    {
+      constexpr TensorIndex a = outer_v<A>;
+      constexpr TensorIndex b = outer_v<B>;
+      constexpr TensorIndex c = a ^ b;
+      return c;
+    }
+
+    constexpr auto evaluate(ScalarIndex<order_v<Product>> const& i) const
       -> auto
     {
       constexpr TensorIndex outer = outer_v<Product>;
@@ -124,27 +152,26 @@ namespace albert
       constexpr TensorIndex inner = l & r;
       constexpr TensorIndex   all = outer + inner;
       constexpr int     N = dim();
-      constexpr int  Rank = outer.size();
+      constexpr int Order = outer.size();
       constexpr int     I = inner.size();
 
       auto rhs = [&](auto const& index) {
         return a.evaluate(select<all, l>(index)) * b.evaluate(select<all, r>(index));
       };
 
-      ScalarIndex<Rank + I> j(i);
+      ScalarIndex<Order + I> j(i);
       decltype(rhs(j)) temp{};
       do {
         temp += rhs(j);
-      } while (carry_sum_inc<N, Rank>(j));
+      } while (carry_sum_inc<N, Order>(j));
       return temp;
     }
   };
 
-  template <is_tree A>
+  template <is_expression A>
   struct Negate : Bindable<Negate<A>>
   {
-    using tree_node_tag = void;
-    using unary_node_tag = void;
+    using scalar_type = scalar_type_t<A>;
 
     A a;
 
@@ -153,9 +180,9 @@ namespace albert
     {
     }
 
-    constexpr static auto outer()
+    constexpr static auto order() -> int
     {
-      return outer_v<A>;
+      return order_v<A>;
     }
 
     constexpr static auto dim() -> int
@@ -163,17 +190,21 @@ namespace albert
       return dim_v<A>;
     }
 
-    constexpr auto evaluate(ScalarIndex<rank_v<Negate>> const& i) const
+    constexpr static auto outer() -> is_tensor_index auto
+    {
+      return outer_v<A>;
+    }
+
+    constexpr auto evaluate(ScalarIndex<order_v<Negate>> const& i) const
     {
       return -a.evaluate(i);
     }
   };
 
-  template <is_tree A, is_tensor_index auto index>
+  template <is_expression A, is_tensor_index auto index>
   struct Partial : Bindable<Partial<A, index>>
   {
-    using tree_node_tag = void;
-    using unary_node_tag = void;
+    using scalar_type = scalar_type_t<A>;
 
     A a;
 
@@ -182,24 +213,34 @@ namespace albert
     {
     }
 
-    constexpr static auto outer()
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type() const requires (order_v<Partial> == 0)
+    {
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr static auto order() -> int
+    {
+      return outer().size();
+    }
+
+    constexpr static auto dim() -> int
+    {
+      return dim_v<A>;
+    }
+
+    constexpr static auto outer() -> is_tensor_index auto
     {
       return (outer_v<A> + index).exclusive();
     }
 
-    constexpr static auto dim() -> int
-    {
-      return dim_v<A>;
-    }
-
-    constexpr auto evaluate(ScalarIndex<rank_v<Partial>> const&) const;
+    constexpr auto evaluate(ScalarIndex<order_v<Partial>> const&) const;
   };
 
-  template <is_tree A>
+  template <is_expression A>
   struct Inverse : Bindable<Inverse<A>>
   {
-    using tree_node_tag = void;
-    using unary_node_tag = void;
+    using scalar_type = scalar_type_t<A>;
 
     A a;
 
@@ -208,9 +249,9 @@ namespace albert
     {
     }
 
-    constexpr static auto outer()
+    constexpr static auto order() -> int
     {
-      return outer_v<A>;
+      return order_v<A>;
     }
 
     constexpr static auto dim() -> int
@@ -218,14 +259,18 @@ namespace albert
       return dim_v<A>;
     }
 
-    constexpr auto evaluate(ScalarIndex<rank_v<Inverse>> const&) const;
+    constexpr static auto outer() -> is_tensor_index auto
+    {
+      return outer_v<A>;
+    }
+
+    constexpr auto evaluate(ScalarIndex<order_v<Inverse>> const&) const;
   };
 
-  template <is_tree A> requires(rank_v<A> == 0)
+  template <is_expression A> requires(order_v<A> == 0)
   struct Inverse<A> : Bindable<Inverse<A>>
   {
-    using tree_node_tag = void;
-    using unary_node_tag = void;
+    using scalar_type = scalar_type_t<A>;
 
     A a;
 
@@ -234,14 +279,25 @@ namespace albert
     {
     }
 
-    constexpr static auto outer()
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type()
     {
-      return outer_v<A>;
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr static auto order() -> int
+    {
+      return order_v<A>;
     }
 
     constexpr static auto dim() -> int
     {
       return dim_v<A>;
+    }
+
+    constexpr static auto outer() -> is_tensor_index auto
+    {
+      return outer_v<A>;
     }
 
     constexpr auto evaluate(ScalarIndex<0> const& i) const
@@ -254,8 +310,7 @@ namespace albert
   template <class T>
   struct Literal
   {
-    using tree_node_tag = void;
-    using leaf_node_tag = void;
+    using scalar_type = scalar_type_t<T>;
 
     T x;
 
@@ -264,7 +319,13 @@ namespace albert
     {
     }
 
-    constexpr static auto rank() -> int
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type()
+    {
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr static auto order() -> int
     {
       return 0;
     }
@@ -279,7 +340,7 @@ namespace albert
       return {};
     }
 
-    constexpr auto evaluate(ScalarIndex<rank_v<Literal>> const&) const
+    constexpr auto evaluate(ScalarIndex<order_v<Literal>> const&) const
       -> T const&
     {
       return x;
@@ -289,10 +350,7 @@ namespace albert
   template <TensorIndex<2> index>
   struct Delta : Bindable<Delta<index>>
   {
-    using tree_node_tag = void;
-    using leaf_node_tag = void;
-
-    constexpr static auto rank() -> int
+    constexpr static auto order() -> int
     {
       return 2;
     }
@@ -307,7 +365,7 @@ namespace albert
       return index;
     }
 
-    constexpr static auto evaluate(ScalarIndex<rank_v<Delta>> const& i)
+    constexpr static auto evaluate(ScalarIndex<order_v<Delta>> const& i)
       -> bool
     {
       return i[0] == i[1];
@@ -317,10 +375,7 @@ namespace albert
   template <is_tensor_index auto index>
   struct Epsilon : Bindable<Delta<index>>
   {
-    using tree_node_tag = void;
-    using leaf_node_tag = void;
-
-    constexpr static auto rank() -> int
+    constexpr static auto order() -> int
     {
       return index.size();
     }
@@ -330,12 +385,12 @@ namespace albert
       return 0;
     }
 
-    constexpr static auto outer()
+    constexpr static auto outer() -> is_tensor_index auto
     {
       return index;
     }
 
-    constexpr auto evaluate(ScalarIndex<rank_v<Epsilon>> const&) const;
+    constexpr auto evaluate(ScalarIndex<order_v<Epsilon>> const&) const;
   };
 }
 

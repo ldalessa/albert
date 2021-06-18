@@ -6,7 +6,6 @@
 #include "albert/TensorIndex.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
-#include "albert/traits.hpp"
 #include "albert/utils.hpp"
 #include <ce/cvector.hpp>
 #include <utility>
@@ -18,9 +17,10 @@ namespace albert
 
   /// The bind node.
   ///
-  /// A bind node associates some subtree with an Einstein notation index
-  /// mapping, potentially including self-contraction, and/or a set of
-  /// projected indices.
+  /// The bind node is the most semantically important type of node in the
+  /// albert expression tree. A bind node associates some subtree with an
+  /// Einstein notation index mapping, potentially including self-contraction,
+  /// and/or a set of projected indices.
   ///
   /// Bind nodes may have full subtrees or just leafs (like tensor nodes).
   ///
@@ -28,8 +28,8 @@ namespace albert
   ///
   ///     is_index i, j, k, l;                     // indices
   ///     is_tensor A;                             // actual matrix tensor
-  ///     is_tree B;                               // matrix tree
-  ///     is_tree C;                               // vector tree
+  ///     is_expression B;                         // matrix expression
+  ///     is_expression C;                         // vector expression
   ///     auto bind = A(i, j);                     // basic bind
   ///     auto bind = A(i, i);                     // trace
   ///     auto bind = A(1, i);                     // projection
@@ -50,44 +50,51 @@ namespace albert
   ///
   /// @param     A The type of the subtree.
   /// @param index The index binding to the subtree.
-  template <is_tree A, is_tensor_index auto index>
+  template <is_tensor A, is_tensor_index auto index>
   struct Bind : Bindable<Bind<A, index>>
   {
-    /// Subscribe to tree concepts.
-    /// @{
-    using tree_node_tag = void;
-    using unary_node_tag = void;
-    /// @}
+    using scalar_type = scalar_type_t<A>;
 
-    constexpr static int M = index.scalars().size(); //!< number of projected indices
+    constexpr static int Order = order_v<Bind>;
+    constexpr static int M = index.n_projected(); //!< number of projected indices
 
     A a;                                        //!< subtree
-    ScalarIndex<M> _scalars;                    //!< projected indices
+    ScalarIndex<M> _projected;                  //!< projected indices
 
     /// Construct a bind node for a subtree.
     ///
-    /// @param       a The subtree we're binding.
-    /// @param scalars Scalars associated with projections (if any).
-    /// @param       ? Helper to specify the `index` CNTTP.
-    constexpr Bind(A a, ce::cvector<int, M> const& scalars, nttp_args<index>)
-        : a(std::move(a))
-        , _scalars(scalars)
+    /// This uses a trick to infer the right type for the subtree.
+    /// - If the subtree is an lvalue reference then A is a reference type and
+    ///   we'll capture the reference.
+    /// - If the subree is an rvalue reference then A is a value type and we'll
+    ///   move from it.
+    ///
+    /// This allows use of bound tensors for the lhs of expressions.
+    ///
+    /// @param         a The subtree we're binding.
+    /// @param projected Scalars associated with projections (if any).
+    /// @param           Helper to specify the `index` CNTTP.
+    template <is_tensor B>
+    constexpr Bind(B&& a, ce::cvector<int, M> const& projected, nttp_args<index>)
+        : a(std::forward<A>(a))
+        , _projected(projected)
     {
-      constexpr auto l = rank_v<A>;
+      constexpr auto l = order_v<A>;
       constexpr auto r = index.size();
       static_assert(l == r);
     }
 
     /// Default copy and move will prevent implicit operator= generation, which
-    /// means that the `is_tree` version will match _all_ instances of
+    /// means that the `is_expression` version will match _all_ instances of
     /// Bind::operator=.
     /// @{
     constexpr Bind(Bind const&) = default;
     constexpr Bind(Bind&&) = default;
     /// @}
 
-    template <is_tree B>
-    constexpr Bind& operator=(B&& b)
+    template <is_expression B>
+    constexpr auto operator=(B&& b)
+      -> Bind&
     {
       constexpr TensorIndex l = outer_v<Bind>;
       constexpr TensorIndex r = outer_v<B>;
@@ -97,53 +104,66 @@ namespace albert
       });
     }
 
-    ///
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type() const requires (Order == 0)
+    {
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    /// CPO support.
     constexpr static auto outer()
+      -> decltype(auto)
     {
       return index.exclusive();
     }
 
-    constexpr static auto dim() -> decltype(auto)
+    constexpr static auto dim()
+      -> decltype(auto)
     {
       return dim_v<A>;
+    }
+
+    constexpr static auto order()
+      -> decltype(auto)
+    {
+      return outer().size();
     }
 
     /// Evaluate a bind node when there's a contraction.
     ///
     /// Contracted binds can only exist on the right-hand-side of an equation,
     /// because they don't represent lvalues when evaluated.
-    constexpr auto evaluate(ScalarIndex<rank_v<Bind>> const& i) const
-      -> auto requires(index.repeated().size() != 0)
+    constexpr auto evaluate(ScalarIndex<Order> const& i) const
+      requires(index.n_repeated() != 0)
     {
-      constexpr TensorIndex  outer = index.exclusive();
-      constexpr TensorIndex slices = index.scalars();
-      constexpr TensorIndex  inner = index.repeated();
-      constexpr TensorIndex    all = outer + slices + inner;
-      constexpr int      N = dim();
-      constexpr int   Rank = outer.size() + slices.size();
-      constexpr int      I = inner.size();
+      constexpr TensorIndex     outer = index.exclusive();
+      constexpr TensorIndex projected = index.projected();
+      constexpr TensorIndex     inner = index.repeated();
+      constexpr TensorIndex       all = outer + projected + inner;
+      constexpr int     N = dim();
+      constexpr int Order = outer.size() + projected.size();
+      constexpr int     I = inner.size();
 
       auto rhs = [&](auto const& i) {
         return a.evaluate(select<all, index>(i));
       };
 
-      ScalarIndex<Rank + I> j(i + _scalars);
+      ScalarIndex<Order + I> j(i + _projected);
       decltype(rhs(j)) temp{};
       do {
         temp += rhs(j);
-      } while (carry_sum_inc<N, Rank>(j));
+      } while (carry_sum_inc<N, Order>(j));
       return temp;
     }
 
     /// Evaluate a bind node when there's only a projection.
-    constexpr auto evaluate(ScalarIndex<rank_v<Bind>> const& i) const
-      -> decltype(auto) requires(index.repeated().size() == 0 and
-                                 index.scalars().size() != 0)
+    constexpr auto evaluate(ScalarIndex<Order> const& i) const -> decltype(auto)
+      requires(index.n_repeated() == 0 and index.n_projected() != 0)
     {
       constexpr TensorIndex  outer = index.exclusive();
-      constexpr TensorIndex slices = index.scalars();
+      constexpr TensorIndex slices = index.projected();
       constexpr TensorIndex    all = outer + slices;
-      return a.evaluate(select<all, index>(i + _scalars));
+      return a.evaluate(select<all, index>(i + _projected));
     }
 
     /// Evaluate a bind node when there's only a projection.
@@ -151,19 +171,18 @@ namespace albert
     /// This version of the bind represents an assignable lvalue, assuming that
     /// the underlying expression is assignable. This is currently only true for
     /// raw tensors.
-    constexpr auto evaluate(ScalarIndex<rank_v<Bind>> const& i)
-      -> decltype(auto) requires(index.repeated().size() == 0 and
-                                 index.scalars().size() != 0)
+    constexpr auto evaluate(ScalarIndex<Order> const& i) -> decltype(auto)
+      requires(index.n_repeated() == 0 and index.n_promoted() != 0)
     {
       constexpr TensorIndex  outer = index.exclusive();
-      constexpr TensorIndex slices = index.scalars();
+      constexpr TensorIndex slices = index.projected();
       constexpr TensorIndex    all = outer + slices;
-      return a.evaluate(select<all, index>(i + _scalars));
+      return a.evaluate(select<all, index>(i + _projected));
     }
 
     /// Evaluate a bind that contains neither contraction nor projection.
-    constexpr auto evaluate(ScalarIndex<rank_v<Bind>> i) const -> decltype(auto)
-      requires((index.scalars().size() + index.repeated().size()) == 0)
+    constexpr auto evaluate(ScalarIndex<Order> i) const -> decltype(auto)
+      requires((index.n_projected() + index.n_repeated()) == 0)
     {
       return a.evaluate(i);
     }
@@ -173,101 +192,150 @@ namespace albert
     /// This version of the bind represents an assignable lvalue, assuming that
     /// the underlying expression is assignable. This is currently only true for
     /// raw tensors.
-    constexpr auto evaluate(ScalarIndex<rank_v<Bind>> i) -> decltype(auto)
-      requires((index.scalars().size() + index.repeated().size()) == 0)
+    constexpr auto evaluate(ScalarIndex<Order> i) -> decltype(auto)
+      requires((index.n_projected() + index.n_repeated()) == 0)
     {
       return a.evaluate(i);
     }
   };
 
+  /// Deduction guide allows us to infer lvalue reference types.
+  template <is_tensor A, is_tensor_index auto index, int M = 0>
+  Bind(A&&, ce::cvector<int, M> const&, nttp_args<index>)
+    -> Bind<A, index>;
+
   template <class T>
   struct Bindable
   {
-    template <is_index I, class... Is> requires (all_index<Is...>)
-    constexpr auto operator()(I i, Is... is) const & -> decltype(auto)
-    {
-      constexpr cat_index_type_t<I, Is...> all = {};
-      constexpr TensorIndex index(all);
-      constexpr int n_scalars = index.scalars().size();
-      ce::cvector<int, n_scalars> scalars;
-      if (std::integral<I>) {
-        scalars.push_back(i);
-      }
-      ([&] {
-        if constexpr (std::integral<Is>) {
-          scalars.push_back(is);
-        }
-      }(), ...);
+    constexpr static int Order = order_v<T>;
 
-      return Bind {
-        *static_cast<T const*>(this),
-        scalars,
-        nttp<index>
-      };
+    constexpr auto derived() const & -> T const*
+    {
+      return static_cast<T const*>(this);
     }
 
-    template <is_index I, class... Is> requires (all_index<Is...>)
-    constexpr auto operator()(I i, Is... is) && -> decltype(auto)
+    constexpr auto derived() && -> T*
     {
-      constexpr cat_index_type_t<I, Is...> all = {};
-      constexpr TensorIndex index(all);
-      constexpr int n_scalars = index.scalars().size();
-      ce::cvector<int, n_scalars> scalars;
-      if (std::integral<I>) {
-        scalars.push_back(i);
-      }
-      ([&] {
-        if constexpr (std::integral<Is>) {
-          scalars.push_back(is);
-        }
-      }(), ...);
-
-      return Bind {
-        std::move(*static_cast<T*>(this)),
-        scalars,
-        nttp<index>
-      };
+      return static_cast<T*>(this);
     }
 
-    template <is_index I, class... Is> requires (all_index<Is...>)
-    constexpr auto operator()(is_index auto i, Is... is) & -> decltype(auto)
+    constexpr auto derived() & -> T*
     {
-      constexpr cat_index_type_t<I, Is...> all = {};
-      constexpr TensorIndex index(all);
-      constexpr int n_scalars = index.scalars().size();
-      ce::cvector<int, n_scalars> scalars;
-      if (std::integral<I>) {
-        scalars.push_back(i);
-      }
-      ([&] {
-        if constexpr (std::integral<Is>) {
-          scalars.push_back(is);
-        }
-      }(), ...);
+      return static_cast<T*>(this);
+    }
 
-      return Bind {
-        *static_cast<T*>(this),
-        scalars,
-        nttp<index>
-      };
+    template <class... Is>
+    requires (all_index<Is...>)
+    constexpr auto operator()(Is... is) const &
+      -> decltype(auto)
+    {
+      static_assert(sizeof...(Is) == Order, "Tensor index must be fully specified");
+
+      if constexpr (all_integral_index<Is...>) {
+        ScalarIndex<Order> index(is...);
+        return derived()->evaluate(index);
+      }
+      else {
+        // Build an index sequence that has all of the characters as specified
+        // (any projected indices are mapped to `\0`).
+        constexpr cat_index_type_t<Is...> all = {};
+
+        // Build a tensor index for the index sequence.
+        constexpr TensorIndex index(all);
+
+        // Extract the projected indices.
+        ce::cvector<int, index.n_projected()> projected;
+        ([&] {
+          if constexpr (std::integral<Is>) {
+            projected.push_back(is);
+          }
+        }(), ...);
+
+        return Bind { *derived(), projected, nttp<index> };
+      }
+    }
+
+    template <class... Is>
+    requires (all_index<Is...>)
+    constexpr auto operator()(Is... is) &&
+      -> decltype(auto)
+    {
+      static_assert(sizeof...(Is) == Order, "Tensor index must be fully specified");
+
+      if constexpr (all_integral_index<Is...>) {
+        ScalarIndex<Order> index(is...);
+        return derived()->evaluate(index);
+      }
+      else {
+        // Build an index sequence that has all of the characters as specified
+        // (any projected indices are mapped to `\0`).
+        constexpr cat_index_type_t<Is...> all = {};
+
+        // Build a tensor index for the index sequence.
+        constexpr TensorIndex index(all);
+
+        // Extract the projected indices.
+        ce::cvector<int, index.n_projected()> projected;
+        ([&] {
+          if constexpr (std::integral<Is>) {
+            projected.push_back(is);
+          }
+        }(), ...);
+
+        return Bind { *derived(), projected, nttp<index> };
+      }
+    }
+
+    template <class... Is>
+    requires (all_index<Is...>)
+    constexpr auto operator()(Is... is) &
+      -> decltype(auto)
+    {
+      static_assert(sizeof...(Is) == Order, "Tensor index must be fully specified");
+
+      if constexpr (all_integral_index<Is...>) {
+        ScalarIndex<Order> index(is...);
+        return derived()->evaluate(index);
+      }
+      else {
+        // Build an index sequence that has all of the characters as specified
+        // (any projected indices are mapped to `\0`).
+        constexpr cat_index_type_t<Is...> all = {};
+
+        // Build a tensor index for the index sequence.
+        constexpr TensorIndex index(all);
+
+        // Extract the projected indices.
+        ce::cvector<int, index.n_projected()> projected;
+        ([&] {
+          if constexpr (std::integral<Is>) {
+            projected.push_back(is);
+          }
+        }(), ...);
+
+        return Bind { *derived(), projected, nttp<index> };
+      }
     }
 
     template <is_tensor_index auto index>
-    constexpr auto rebind() const & -> decltype(auto)
+    constexpr auto rebind() const &
+      -> decltype(auto)
     {
-      return Bind { *static_cast<T const*>(this), {}, nttp<index> };
+      return Bind { *derived(), {}, nttp<index> };
     }
 
     template <is_tensor_index auto index>
-    constexpr auto rebind() && -> decltype(auto)
+    constexpr auto rebind() &&
+      -> decltype(auto)
     {
-      return Bind { std::move(*static_cast<T*>(this)), {}, nttp<index> };
+      return Bind { std::move(*derived()), {}, nttp<index> };
     }
 
     template <is_tensor_index auto index>
-    constexpr auto rebind() & -> decltype(auto)
+    constexpr auto rebind() &
+      -> decltype(auto)
     {
-      return Bind{ *static_cast<T*>(this), {}, nttp<index> };
+      return Bind{ *derived(), {}, nttp<index> };
     }
   };
 }

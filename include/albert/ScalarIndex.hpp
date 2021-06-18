@@ -2,17 +2,19 @@
 #define ALBERT_INCLUDE_SCALAR_INDEX_HPP
 
 #include "albert/concepts.hpp"
-#include "albert/traits.hpp"
 #include "albert/utils.hpp"
 #include <ce/cvector.hpp>
 
 namespace albert
 {
   /// A scalar index represents a runtime tensor index.
-  template <int M>
+  ///
+  /// Scalar indices are stored "big endian" in the sense that the outermost
+  /// index is at offset 0.
+  template <int Order>
   struct ScalarIndex
   {
-    ce::cvector<int, M> _data = { M };
+    ce::cvector<int, Order> _data = { Order };
 
     constexpr ScalarIndex() = default;
 
@@ -28,9 +30,14 @@ namespace albert
       std::copy_n(b.begin(), b.size(), _data.begin());
     }
 
+    constexpr ScalarIndex(std::same_as<int> auto... is)
+        : _data { std::in_place, is... }
+    {
+    }
+
     constexpr static auto size() -> int
     {
-      return M;
+      return Order;
     }
 
     constexpr auto begin() const -> decltype(auto)
@@ -96,7 +103,7 @@ namespace albert
     template <int N, int n = 0>
     constexpr friend bool carry_sum_inc(ScalarIndex& index)
     {
-      for (int i = n; i < M; ++i) {
+      for (int i = n; i < Order; ++i) {
         if (++index[i] < N) {
           return true;                          // no carry
         }
@@ -106,6 +113,11 @@ namespace albert
     }
   };
 
+  /// Infer the ScalarIndex Order for this constructor.
+  ScalarIndex(std::same_as<int> auto... is) -> ScalarIndex<sizeof...(is)>;
+
+  /// Non-friend operator+ because it reduces the number of instances that the
+  /// compiler needs to generate.
   template <int A, int B>
   constexpr auto operator+(ScalarIndex<A> const& a, ScalarIndex<B> const& b)
     -> ScalarIndex<A + B>

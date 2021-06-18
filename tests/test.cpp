@@ -3,7 +3,9 @@
 template <class> struct print;
 
 using namespace albert::grammar;
-int main() {
+
+int main()
+{
   albert::Index<'i'> i;
   albert::Index<'j'> j;
   albert::Tensor<double, 1, 3> a = { 1, 2, 3 };
@@ -16,8 +18,15 @@ int main() {
     7, 8, 9
   };
 
-  auto aa = A(0, j);
-  aa = A(1, j);
+
+  albert::Tensor projection = A(1, j);
+
+  b = A(1,j);
+
+  // A(0, j) = A(1, j);
+
+  // auto aa = A(0, j);
+  // aa = A(1, j);
 
   // b = d;
 

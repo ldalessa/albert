@@ -4,12 +4,11 @@
 #include "albert/Index.hpp"
 #include "albert/ScalarIndex.hpp"
 #include "albert/concepts.hpp"
-#include "albert/traits.hpp"
 #include "albert/utils.hpp"
 
 namespace albert
 {
-  template <is_tree A, is_tree B, class Op>
+  template <is_expression A, is_expression B, class Op>
   [[gnu::noinline]]
   constexpr auto evaluate(A&& a, B&& b, Op&& op) -> decltype(auto)
   {
@@ -18,10 +17,10 @@ namespace albert
 
     constexpr TensorIndex l = outer_v<A>;
     constexpr TensorIndex r = outer_v<B>;
-    constexpr int Rank = rank_v<A>;
+    constexpr int Order = order_v<A>;
     constexpr int N = max(dim_v<A>, dim_v<B>);
 
-    ScalarIndex<Rank> i;
+    ScalarIndex<Order> i;
     do {
       if constexpr (l == r) {
         op(a.evaluate(i), b.evaluate(i));

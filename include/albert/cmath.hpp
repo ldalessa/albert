@@ -2,7 +2,6 @@
 #define ALBERT_INCLUDE_CMATH_HPP
 
 #include "albert/Bind.hpp"
-#include "albert/traits.hpp"
 #include <cmath>
 
 namespace albert
@@ -40,24 +39,35 @@ namespace albert
   template <CMathTag tag>
   constexpr inline cmath_tag<tag> cmath_tag_v = {};
 
-  template <class A, CMathTag tag>
+  template <is_expression A, CMathTag tag>
   struct CMath : Bindable<CMath<A, tag>>
   {
     static_assert(POW < tag and tag < CMATH_TAG_MAX);
-    using tree_node_tag = void;
-    using unary_node_tag = void;
+
+    using scalar_type = scalar_type_t<A>;
 
     A a;
 
     constexpr CMath(A a, cmath_tag<tag>)
         : a(std::move(a))
     {
-      static_assert(rank_v<A> == 0);     // can't currently handle tensor cmath
+      static_assert(order_v<A> == 0);     // can't currently handle tensor cmath
     }
 
-    constexpr static auto outer()
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type() const requires (order_v<CMath> == 0)
     {
-      return outer_v<A>;
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr static auto order() -> int
+    {
+      return 0;
+    }
+
+    constexpr static auto outer() -> TensorIndex<0>
+    {
+      return {};
     }
 
     constexpr static auto dim() -> int
@@ -65,7 +75,7 @@ namespace albert
       return dim_v<A>;
     }
 
-    constexpr auto evaluate(ScalarIndex<rank_v<CMath>> const&) const
+    constexpr auto evaluate(ScalarIndex<order_v<CMath>> const&) const
     {
       using std::abs;
       using std::exp;
@@ -114,11 +124,10 @@ namespace albert
     }
   };
 
-  template <class A, class B, CMathTag tag>
+  template <is_expression A, is_expression B, CMathTag tag>
   struct CMath2 : Bindable<CMath<A, tag>>
   {
-    using tree_node_tag = void;
-    using binary_node_tag = void;
+    using scalar_type = scalar_type_t<A>;
 
     A a;
     B b;
@@ -127,13 +136,24 @@ namespace albert
         : a(std::move(a))
         , b(std::move(b))
     {
-      static_assert(rank_v<A> == 0);     // can't currently handle tensor cmath
-      static_assert(rank_v<B> == 0);     // can't currently handle tensor cmath
+      static_assert(order_v<A> == 0);     // can't currently handle tensor cmath
+      static_assert(order_v<B> == 0);     // can't currently handle tensor cmath
     }
 
-    constexpr static auto outer()
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type() const requires (order_v<CMath2> == 0)
     {
-      return outer_v<A>;
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr static auto order() -> int
+    {
+      return 0;
+    }
+
+    constexpr static auto outer() -> TensorIndex<0>
+    {
+      return {};
     }
 
     constexpr static auto dim() -> int
@@ -141,7 +161,7 @@ namespace albert
       return dim_v<A>;
     }
 
-    constexpr auto evaluate(ScalarIndex<rank_v<CMath2>> const&) const
+    constexpr auto evaluate(ScalarIndex<order_v<CMath2>> const&) const
     {
       using std::fmin;
       using std::fmax;
