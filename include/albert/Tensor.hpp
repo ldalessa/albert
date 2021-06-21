@@ -14,18 +14,17 @@ namespace albert
     class T,
     int Order,
     int N,
-    template <int, int> class Layout = RowMajor,
-    template <class, int, int> class Storage = DenseStorage
+    auto tag = []()->void{} // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99902
     >
-  struct Tensor : Bindable<Tensor<T, Order, N, Layout, Storage>>
+  struct Tensor : Bindable<Tensor<T, Order, N, tag>>
   {
-    using Bindable<Tensor<T, Order, N, Layout, Storage>>::operator();
+    using Bindable<Tensor<T, Order, N, tag>>::operator();
 
     using scalar_type = T;
 
-    constexpr static Layout<Order, N> _map = {};
+    constexpr static RowMajor<Order, N> _map = {};
 
-    Storage<T, Order, N> _data;
+    DenseStorage<T, Order, N> _data;
 
     constexpr operator scalar_type() const requires(Order == 0)
     {
@@ -57,6 +56,22 @@ namespace albert
     {
       static_assert(sizeof...(ts) < size());
     }
+
+    /// Make a copy of the data with a new tag, for both copy construction and
+    /// assignment.
+    constexpr Tensor(Tensor const&) = delete;
+    constexpr auto operator=(Tensor const&) -> Tensor& = delete;
+
+    template <auto other_tag>
+    // requires (other_tag != tag) https://gcc.gnu.org/bugzilla/show_bug.cgi?id=101155
+    constexpr Tensor(Tensor<T, Order, N, other_tag> const& b)
+        : _data { b._data }
+    {
+    }
+
+    /// Fine to move the tag here.
+    constexpr Tensor(Tensor&&) = default;
+    constexpr auto operator=(Tensor&&) -> Tensor& = default;
 
     /// Construct a tensor from an expression.
     template <is_expression B>
@@ -115,7 +130,15 @@ namespace albert
 
   /// Infer a tensor type for an expression.
   template <is_expression B>
-  Tensor(B) -> Tensor<scalar_type_t<B>, order_v<B>, dim_v<B>, RowMajor, DenseStorage>;
+  Tensor(B) -> Tensor<scalar_type_t<B>, order_v<B>, dim_v<B>>;
+
+  /// Update the tag during a copy construction.
+  template <class T, int Order, int N, auto tag>
+  Tensor(Tensor<T, Order, N, tag> const&) -> Tensor<T, Order, N>;
+
+  /// Retain the tag during a move construction.
+  template <class T, int Order, int N, auto tag>
+  Tensor(Tensor<T, Order, N, tag>&&) -> Tensor<T, Order, N, tag>;
 }
 
 #endif // ALBERT_INCLUDE_TENSOR_HPP

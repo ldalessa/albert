@@ -172,7 +172,7 @@ namespace albert
     /// the underlying expression is assignable. This is currently only true for
     /// raw tensors.
     constexpr auto evaluate(ScalarIndex<Order> const& i) -> decltype(auto)
-      requires(index.n_repeated() == 0 and index.n_promoted() != 0)
+      requires(index.n_repeated() == 0 and index.n_projected() != 0)
     {
       constexpr TensorIndex  outer = index.exclusive();
       constexpr TensorIndex slices = index.projected();

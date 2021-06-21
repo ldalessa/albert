@@ -202,40 +202,48 @@ constexpr static bool copy(type_args<T> = {})
   bool passed = true;
 
   Tensor<T, 0, 0> aa{ T(1) };
-  Tensor a = aa;
+  Tensor<T, 0, 0> a;
+  a = aa;
   passed &= ALBERT_CHECK(a[0] == 1);
 
   Tensor<T, 0, 1> bb{ T(1) };
-  Tensor b = bb;
+  Tensor<T, 0, 1> b;
+  b = bb;
   passed &= ALBERT_CHECK(b[0] == 1);
 
   Tensor<T, 1, 1> cc{ T(1) };
-  Tensor c = cc;
+  Tensor<T, 1, 1> c;
+  c = cc;
   passed &= ALBERT_CHECK(c[0] == 1);
 
   Tensor<T, 1, 3> dd{ T(1), T(2) };
-  Tensor d = dd;
+  Tensor<T, 1, 3> d;
+  d = dd;
   passed &= ALBERT_CHECK(d[0] == 1);
   passed &= ALBERT_CHECK(d[1] == 2);
 
   Tensor<T, 1, 3> ee{ T(1), T(2), T(3) };
-  Tensor e = ee;
+  Tensor<T, 1, 3> e;
+  e = ee;
   passed &= ALBERT_CHECK(e[0] == 1);
   passed &= ALBERT_CHECK(e[1] == 2);
   passed &= ALBERT_CHECK(e[2] == 3);
 
   Tensor<T, 2, 1> ff{ T(1) };
-  Tensor f = ff;
+  Tensor<T, 2, 1> f;
+  f = ff;
   passed &= ALBERT_CHECK(f[0] == 1);
 
   Tensor<T, 2, 2> gg{ T(1), T(2), T(3) };
-  Tensor g = gg;
+  Tensor<T, 2, 2> g;
+  g = gg;
   passed &= ALBERT_CHECK(g[0] == 1);
   passed &= ALBERT_CHECK(g[1] == 2);
   passed &= ALBERT_CHECK(g[2] == 3);
 
   Tensor<T, 2, 2> hh{ T(1), T(2), T(3), T(4) };
-  Tensor h = hh;
+  Tensor<T, 2, 2> h;
+  h = hh;
   passed &= ALBERT_CHECK(h[0] == 1);
   passed &= ALBERT_CHECK(h[1] == 2);
   passed &= ALBERT_CHECK(h[2] == 3);
