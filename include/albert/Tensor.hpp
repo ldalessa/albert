@@ -2,8 +2,8 @@
 #define ALBERT_INCLUDE_TENSOR_HPP
 
 #include "albert/Bind.hpp"
-#include "albert/TensorStorage.hpp"
 #include "albert/TensorLayout.hpp"
+#include "albert/TensorStorage.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
 #include "albert/utils.hpp"
@@ -14,11 +14,11 @@ namespace albert
     class T,
     int Order,
     int N,
-    auto tag = []()->void{} // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99902
+    auto _tag = []()->void{} // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99902
     >
-  struct Tensor : Bindable<Tensor<T, Order, N, tag>>
+  struct Tensor : Bindable<Tensor<T, Order, N, _tag>>
   {
-    using Bindable<Tensor<T, Order, N, tag>>::operator();
+    using Bindable<Tensor<T, Order, N, _tag>>::operator();
 
     using scalar_type = T;
 
@@ -29,6 +29,22 @@ namespace albert
     constexpr operator scalar_type() const requires(Order == 0)
     {
       return _data[0];
+    }
+
+    constexpr static auto tag() -> decltype(auto)
+    {
+      return _tag;
+    }
+
+    constexpr static bool contains(auto&& tag)
+    {
+      return std::is_same_v<std::remove_cvref_t<decltype(tag)>,
+                            std::remove_cvref_t<decltype(_tag)>>;
+    }
+
+    constexpr static bool may_alias(auto&&)
+    {
+      return false;
     }
 
     constexpr static auto size()
@@ -63,7 +79,7 @@ namespace albert
     constexpr auto operator=(Tensor const&) -> Tensor& = delete;
 
     template <auto other_tag>
-    // requires (other_tag != tag) https://gcc.gnu.org/bugzilla/show_bug.cgi?id=101155
+    // requires (other_tag != _tag) https://gcc.gnu.org/bugzilla/show_bug.cgi?id=101155
     constexpr Tensor(Tensor<T, Order, N, other_tag> const& b)
         : _data { b._data }
     {

@@ -60,6 +60,16 @@ namespace albert
       return evaluate(ScalarIndex<0>{});
     }
 
+    constexpr static bool contains(auto)
+    {
+      return false;
+    }
+
+    constexpr static bool may_alias(auto)
+    {
+      return false;
+    }
+
     constexpr static auto order() -> int
     {
       return 0;
@@ -138,6 +148,16 @@ namespace albert
     {
       static_assert(order_v<A> == 0);     // can't currently handle tensor cmath
       static_assert(order_v<B> == 0);     // can't currently handle tensor cmath
+    }
+
+    constexpr static bool contains(auto)
+    {
+      return false;
+    }
+
+    constexpr static bool may_alias(auto)
+    {
+      return false;
     }
 
     /// Evaluate into a scalar.

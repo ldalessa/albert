@@ -12,6 +12,9 @@ namespace albert
     // they're scalars (e.g., a rational class)
     template <class>
     struct is_scalar : std::false_type {};
+
+    template <class A, class B>
+    struct may_alias : std::is_same<A, B> {};
   }
 
   // Scalars.

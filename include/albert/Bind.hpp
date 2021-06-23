@@ -96,18 +96,64 @@ namespace albert
     constexpr auto operator=(B&& b)
       -> Bind&
     {
+      return assign(FWD(b), [](auto&& a, auto&&b) {
+          FWD(a) = FWD(b);
+      });
+    }
+
+    template <is_expression B>
+    constexpr auto operator+=(B&& b)
+      -> Bind&
+    {
+      return assign(FWD(b), [](auto&& a, auto&&b) {
+          FWD(a) += FWD(b);
+      });
+    }
+
+    constexpr auto operator-=(is_expression auto && b)
+      -> Bind&
+    {
+      return assign(FWD(b), [](auto&& a, auto&&b) {
+          FWD(a) -= FWD(b);
+      });
+    }
+
+    template <is_expression B>
+    constexpr auto assign(B&& b, auto&& op)
+      -> Bind&
+    {
       constexpr TensorIndex l = outer_v<Bind>;
       constexpr TensorIndex r = outer_v<B>;
-      static_assert(is_permutation(l, r));
-      return albert::evaluate(*this, FWD(b), [](auto&& a, auto&&b) {
-        FWD(a) = FWD(b);
-      });
+      static_assert(is_permutation(l, r), "indices don't match in assignment");
+
+      constexpr bool transpose = (l != r and std::remove_cvref_t<B>::contains(tag()));
+      if constexpr (transpose or std::remove_cvref_t<B>::may_alias(tag())) {
+        return albert::evaluate_via_temp(*this, FWD(b), FWD(op));
+      }
+      else {
+        return albert::evaluate(*this, FWD(b), FWD(op));
+      }
     }
 
     /// Evaluate into a scalar.
     constexpr operator scalar_type() const requires (Order == 0)
     {
       return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr static bool may_alias(auto&& tag)
+    {
+      return std::remove_cvref_t<A>::may_alias(FWD(tag));
+    }
+
+    constexpr static bool contains(auto&& tag)
+    {
+      return std::remove_cvref_t<A>::contains(FWD(tag));
+    }
+
+    constexpr static auto tag() -> decltype(auto)
+    {
+      return std::remove_cvref_t<A>::tag();
     }
 
     /// CPO support.

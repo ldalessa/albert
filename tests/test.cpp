@@ -18,22 +18,5 @@ int main()
     7, 8, 9
   };
 
-
-  albert::Tensor projection = A(1, j);
-
-  b = A(1,j);
-
-  // A(0, j) = A(1, j);
-
-  // auto aa = A(0, j);
-  // aa = A(1, j);
-
-  // b = d;
-
-  // auto d = ((a(i) + b(i)) * δ(i,j)) / c;
-  // auto e = pow(sin(tanh(exp(D(symmetrize(D((a(i) + b(i))(j),i) * c), i)))), d);
-
-  // b = d;
-
-  // print<decltype(d)> _;
+  a(j) += A(j,i)*a(i);
 }

@@ -135,7 +135,7 @@ namespace albert
   TensorIndex(Index<Is...>) -> TensorIndex<sizeof...(Is)>;
 
   template <int N, int M>
-  constexpr inline auto operator==(TensorIndex<N> const& a, TensorIndex<M> const& b)
+  constexpr inline bool operator==(TensorIndex<N> const& a, TensorIndex<M> const& b)
   {
     return a.is == b.is;
   }

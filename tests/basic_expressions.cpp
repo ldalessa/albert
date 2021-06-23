@@ -116,6 +116,11 @@ constexpr static bool contraction(type_args<T> = {})
   passed &= ALBERT_CHECK( Ata(1) == 36 );
   passed &= ALBERT_CHECK( Ata(2) == 42 );
 
+  a = A(i,j) * a(j);
+  passed &= ALBERT_CHECK( a(0) == 14 );
+  passed &= ALBERT_CHECK( a(1) == 32 );
+  passed &= ALBERT_CHECK( a(2) == 50 );
+
   albert::Tensor<T, 2, 3> A2 = {
     30,  36,  42,
     66,  81,  96,
@@ -408,6 +413,69 @@ constexpr static bool transposition(type_args<T> = {})
 }
 
 template <class T>
+constexpr static bool accumulation(type_args<T> = {})
+{
+  bool passed = true;
+  albert::Tensor<T, 1, 3> c = { 1, 2, 3};
+  c(i) += c(i);
+  passed &= ALBERT_CHECK( c(0) == 2 );
+  passed &= ALBERT_CHECK( c(1) == 4 );
+  passed &= ALBERT_CHECK( c(2) == 6 );
+
+  c(i) -= c(i);
+  passed &= ALBERT_CHECK( c(0) == 0 );
+  passed &= ALBERT_CHECK( c(1) == 0 );
+  passed &= ALBERT_CHECK( c(2) == 0 );
+
+  albert::Tensor<T, 2, 3> A = {
+    1, 2, 3,
+    4, 5, 6,
+    7, 8, 9
+  };
+
+  A(i,j) += A(i,j);
+  passed &= ALBERT_CHECK( A(0,0) == 2  );
+  passed &= ALBERT_CHECK( A(0,1) == 4  );
+  passed &= ALBERT_CHECK( A(0,2) == 6  );
+  passed &= ALBERT_CHECK( A(1,0) == 8  );
+  passed &= ALBERT_CHECK( A(1,1) == 10 );
+  passed &= ALBERT_CHECK( A(1,2) == 12 );
+  passed &= ALBERT_CHECK( A(2,0) == 14 );
+  passed &= ALBERT_CHECK( A(2,1) == 16 );
+  passed &= ALBERT_CHECK( A(2,2) == 18 );
+
+  A(i,j) -= A(i,j);
+  passed &= ALBERT_CHECK( A(0,0) == 0 );
+  passed &= ALBERT_CHECK( A(0,1) == 0 );
+  passed &= ALBERT_CHECK( A(0,2) == 0 );
+  passed &= ALBERT_CHECK( A(1,0) == 0 );
+  passed &= ALBERT_CHECK( A(1,1) == 0 );
+  passed &= ALBERT_CHECK( A(1,2) == 0 );
+  passed &= ALBERT_CHECK( A(2,0) == 0 );
+  passed &= ALBERT_CHECK( A(2,1) == 0 );
+  passed &= ALBERT_CHECK( A(2,2) == 0 );
+
+  albert::Tensor<T, 2, 3> B = {
+    1, 2, 3,
+    4, 5, 6,
+    7, 8, 9
+  };
+
+  B(i,j) += B(j,i);
+  passed &= ALBERT_CHECK( B(0,0) == 2 );
+  passed &= ALBERT_CHECK( B(0,1) == 6 );
+  passed &= ALBERT_CHECK( B(0,2) == 10 );
+  passed &= ALBERT_CHECK( B(1,0) == 6 );
+  passed &= ALBERT_CHECK( B(1,1) == 10 );
+  passed &= ALBERT_CHECK( B(1,2) == 14 );
+  passed &= ALBERT_CHECK( B(2,0) == 10 );
+  passed &= ALBERT_CHECK( B(2,1) == 14 );
+  passed &= ALBERT_CHECK( B(2,2) == 18 );
+
+  return passed;
+}
+
+template <class T>
 constexpr static bool tests(type_args<T> type = {})
 {
   bool passed = true;
@@ -418,13 +486,13 @@ constexpr static bool tests(type_args<T> type = {})
   passed &= projection(type);
   passed &= trace(type);
   passed &= transposition(type);
+  passed &= accumulation(type);
   return passed;
 }
 
 int main()
 {
-  //constexpr
-  bool i = tests(args<int>);
-  // constexpr bool f = tests(args<float>);
-  // constexpr bool d = tests(args<double>);
+  constexpr bool i = tests(args<int>);
+  constexpr bool f = tests(args<float>);
+  constexpr bool d = tests(args<double>);
 }

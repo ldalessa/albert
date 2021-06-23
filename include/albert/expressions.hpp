@@ -28,6 +28,18 @@ namespace albert
       static_assert(dim_v<A> == 0 || dim_v<B> == 0 || dim_v<A> == dim_v<B>);
     }
 
+    constexpr static bool contains(auto&& tag)
+    {
+      return A::contains(FWD(tag)) || B::contains(FWD(tag));
+    }
+
+    constexpr static bool may_alias(auto&& tag)
+    {
+      return (A::may_alias(FWD(tag)) ||
+              B::may_alias(FWD(tag)) ||
+              (outer_v<A> != outer_v<B> and contains(FWD(tag))));
+    }
+
     constexpr static auto order() -> int
     {
       return order_v<A>;
@@ -119,6 +131,18 @@ namespace albert
       static_assert(dim_v<A> == 0 || dim_v<B> == 0 || dim_v<A> == dim_v<B>);
     }
 
+    constexpr static bool contains(auto&& tag)
+    {
+      return A::contains(FWD(tag)) || B::contains(FWD(tag));
+    }
+
+    constexpr static bool may_alias(auto&& tag)
+    {
+      // if there's a contraction and one of my children contains the tag then
+      // we may alias
+      return ((outer_v<A> & outer_v<B>).size() and contains(FWD(tag)));
+    }
+
     /// Evaluate into a scalar.
     constexpr operator scalar_type() const requires (order_v<Product> == 0)
     {
@@ -180,6 +204,16 @@ namespace albert
     {
     }
 
+    constexpr static bool contains(auto&& tag)
+    {
+      return A::contains(FWD(tag));
+    }
+
+    constexpr static bool may_alias(auto&& tag)
+    {
+      return A::may_alias(FWD(tag));
+    }
+
     constexpr static auto order() -> int
     {
       return order_v<A>;
@@ -211,6 +245,18 @@ namespace albert
     constexpr Partial(A a)
         : a(std::move(a))
     {
+    }
+
+    constexpr static bool contains(auto&& tag)
+    {
+      assert(not A::contains(FWD(tag)));
+      return false;
+    }
+
+    constexpr static bool may_alias(auto&& tag)
+    {
+      assert(not A::contains(FWD(tag)));
+      return false;
     }
 
     /// Evaluate into a scalar.
@@ -249,6 +295,16 @@ namespace albert
     {
     }
 
+    constexpr static bool contains(auto&& tag)
+    {
+      return A::contains(FWD(tag));
+    }
+
+    constexpr static bool may_alias(auto&& tag)
+    {
+      return A::may_alias(FWD(tag));
+    }
+
     constexpr static auto order() -> int
     {
       return order_v<A>;
@@ -277,6 +333,16 @@ namespace albert
     constexpr Inverse(A a)
         : a(std::move(a))
     {
+    }
+
+    constexpr static bool contains(auto)
+    {
+      return false;
+    }
+
+    constexpr static bool may_alias(auto)
+    {
+      return false;
     }
 
     /// Evaluate into a scalar.
@@ -319,6 +385,16 @@ namespace albert
     {
     }
 
+    constexpr static bool contains(auto)
+    {
+      return false;
+    }
+
+    constexpr static bool may_alias(auto)
+    {
+      return false;
+    }
+
     /// Evaluate into a scalar.
     constexpr operator scalar_type()
     {
@@ -350,6 +426,16 @@ namespace albert
   template <TensorIndex<2> index>
   struct Delta : Bindable<Delta<index>>
   {
+    constexpr static bool contains(auto)
+    {
+      return false;
+    }
+
+    constexpr static bool may_alias(auto)
+    {
+      return false;
+    }
+
     constexpr static auto order() -> int
     {
       return 2;
@@ -375,6 +461,16 @@ namespace albert
   template <is_tensor_index auto index>
   struct Epsilon : Bindable<Delta<index>>
   {
+    constexpr static bool contains(auto)
+    {
+      return false;
+    }
+
+    constexpr static bool may_alias(auto)
+    {
+      return false;
+    }
+
     constexpr static auto order() -> int
     {
       return index.size();
