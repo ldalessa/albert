@@ -13,18 +13,14 @@ namespace albert
     // they're scalars (e.g., a rational class)
     template <class>
     struct is_scalar : std::false_type {};
-
-    template <class A, class B>
-    struct may_alias : std::is_same<A, B> {};
   }
-
-  // Scalars.
-  template <class T>
-  concept is_scalar = std::integral<T> || std::floating_point<T> || traits::is_scalar<T>::value;
 
   // Extract the scalar type of some expression type.
   template <class T>
   struct scalar_type;
+
+  template <class T>
+  using scalar_type_t = typename scalar_type<T>::type;
 
   template <class T>
   requires requires { typename std::remove_cvref_t<T>::scalar_type; }
@@ -34,14 +30,11 @@ namespace albert
   };
 
   template <class T>
-  requires is_scalar<T>
+  requires (std::integral<T> || std::floating_point<T> || traits::is_scalar<T>::value)
   struct scalar_type<T>
   {
     using type = T;
   };
-
-  template <class T>
-  using scalar_type_t = typename scalar_type<T>::type;
 
   /// For our purposes, a tensor is anything with a order and dimension.
   template <class T>
@@ -52,6 +45,10 @@ namespace albert
     { albert::dim(t) } -> std::same_as<int>;
   };
 
+  // Scalars.
+  template <class T>
+  concept is_scalar = is_tensor<T> and (std::integral<T> || std::floating_point<T> || traits::is_scalar<T>::value);
+
   template <class T>
   concept is_tensor_index = requires {
     typename std::remove_cvref_t<T>::tensor_index_tag;
@@ -61,9 +58,9 @@ namespace albert
 
   template <class T>
   concept is_expression = is_tensor<T> and requires (T t) {
-    { albert::outer(t) } -> is_tensor_index;
-    { albert::contains(t, clang_hack) } -> std::same_as<bool>;
-    { albert::may_alias(t, clang_hack) } -> std::same_as<bool>;
+    { t.outer() } -> is_tensor_index;
+    { t.contains(clang_hack) } -> std::same_as<bool>;
+    { t.may_alias(clang_hack) } -> std::same_as<bool>;
   };
 
   template <class T>

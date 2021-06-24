@@ -151,7 +151,9 @@ namespace albert
       return std::remove_cvref_t<A>::contains(FWD(tag));
     }
 
-    constexpr static auto tag() -> decltype(auto)
+    // if
+    constexpr static auto tag()
+      -> decltype(auto) requires requires { std::remove_cvref_t<A>::tag(); }
     {
       return std::remove_cvref_t<A>::tag();
     }
