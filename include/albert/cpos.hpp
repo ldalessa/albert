@@ -25,6 +25,11 @@ namespace albert
 
     constexpr inline struct order_tag
     {
+      constexpr friend auto tag_invoke(order_tag, auto&&) noexcept -> int
+      {
+        return 0;
+      }
+
       constexpr friend auto tag_invoke(order_tag, auto&& obj) noexcept -> int
         requires requires { FWD(obj).order(); }
       {
@@ -40,6 +45,11 @@ namespace albert
 
     constexpr inline struct dim_tag
     {
+      constexpr friend auto tag_invoke(dim_tag, auto&& obj) noexcept -> int
+      {
+        return 0;
+      }
+
       constexpr friend auto tag_invoke(dim_tag, auto&& obj) noexcept -> int
         requires requires { FWD(obj).dim(); }
       {
