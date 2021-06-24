@@ -71,7 +71,12 @@ namespace albert
     template <is_tensor A, is_tensor B>
     constexpr auto operator/(A&& a, B&& b)
     {
-      return Product { detail::promote(FWD(a)), Inverse { detail::promote(FWD(b)) }};
+      if constexpr (std::integral<std::remove_cvref_t<B>>) {
+        return Ratio { detail::promote(FWD(a)), b };
+      }
+      else {
+        return Product { detail::promote(FWD(a)), Inverse { detail::promote(FWD(b)) }};
+      }
     }
 
     template <is_tensor A>

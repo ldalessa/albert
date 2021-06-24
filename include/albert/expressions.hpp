@@ -192,6 +192,71 @@ namespace albert
     }
   };
 
+  /// Represent a scalar division operation for an integral divisor.
+  ///
+  /// For floating point and higher order tensor division the grammar has
+  /// transformed the operator/ to an operator* and an inverse expression, but
+  /// we can't eagerly invert an integral properly. For example
+  ///
+  ///   Tensor A = { 2 };
+  ///   int c = 2;
+  ///   Tensor B = A() / 2;
+  ///            // -> A() * inverse(2);
+  ///            // -> A() * (1 / 2);
+  ///            // -> A() * 0;
+  ///            // -> 0;
+  template <is_expression A, std::integral B>
+  struct Ratio : Bindable<Ratio<A, B>>
+  {
+    using scalar_type = decltype(std::declval<scalar_type_t<A>>() * std::declval<scalar_type_t<B>>());
+
+    A a;
+    B b;
+
+    constexpr Ratio(A a, B b)
+        : a(std::move(a))
+        , b(b)
+    {
+    }
+
+    constexpr static bool contains(auto&& tag)
+    {
+      return A::contains(FWD(tag));
+    }
+
+    constexpr static bool may_alias(auto&& tag)
+    {
+      return A::may_alias(FWD(tag));
+    }
+
+    /// Evaluate into a scalar.
+    constexpr operator scalar_type() const requires (order_v<A> == 0)
+    {
+      return evaluate(ScalarIndex<0>{});
+    }
+
+    constexpr static auto order() -> int
+    {
+      return order_v<A>;
+    }
+
+    constexpr static auto dim() -> int
+    {
+      return dim_v<A>;
+    }
+
+    constexpr static auto outer() -> is_tensor_index auto
+    {
+      return outer_v<A>;
+    }
+
+    constexpr auto evaluate(ScalarIndex<Ratio::order()> const& i) const
+      -> auto
+    {
+      return a.evaluate(i) / b;
+    }
+  };
+
   template <is_expression A>
   struct Negate : Bindable<Negate<A>>
   {

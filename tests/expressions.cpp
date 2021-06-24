@@ -83,6 +83,63 @@ constexpr static bool subtraction(type_args<T> = {})
 }
 
 template <class T>
+constexpr static bool scalar_multiplication(type_args<T> = {})
+{
+  bool passed = true;
+  albert::Tensor<T, 1, 3> a = { 1, 2, 3 }, b = 2 * a(i);
+
+  passed &= ALBERT_CHECK( b[0] == 2 );
+  passed &= ALBERT_CHECK( b[1] == 4 );
+  passed &= ALBERT_CHECK( b[2] == 6 );
+
+  albert::Tensor<T, 2, 3> A = {
+    1, 2, 3,
+    4, 5, 6,
+    7, 8, 9
+  }, B = 2 * A(i,j);
+
+  passed &= ALBERT_CHECK( B[0] == 2  );
+  passed &= ALBERT_CHECK( B[1] == 4  );
+  passed &= ALBERT_CHECK( B[2] == 6  );
+  passed &= ALBERT_CHECK( B[3] == 8  );
+  passed &= ALBERT_CHECK( B[4] == 10 );
+  passed &= ALBERT_CHECK( B[5] == 12 );
+  passed &= ALBERT_CHECK( B[6] == 14 );
+  passed &= ALBERT_CHECK( B[7] == 16 );
+  passed &= ALBERT_CHECK( B[8] == 18 );
+  return passed;
+}
+
+template <class T>
+constexpr static bool scalar_division(type_args<T> = {})
+{
+  bool passed = true;
+  albert::Tensor<T, 1, 3> a = { 2, 4, 6 };
+  albert::Tensor b = a(i) / 2;
+
+  passed &= ALBERT_CHECK( b[0] == 1 );
+  passed &= ALBERT_CHECK( b[1] == 2 );
+  passed &= ALBERT_CHECK( b[2] == 3 );
+
+  albert::Tensor<T, 2, 3> A = {
+    2,  4,  6,
+    8,  10, 12,
+    14, 16, 18
+  }, B = A(i,j) / 2;
+
+  passed &= ALBERT_CHECK( B[0] == 1 );
+  passed &= ALBERT_CHECK( B[1] == 2 );
+  passed &= ALBERT_CHECK( B[2] == 3 );
+  passed &= ALBERT_CHECK( B[3] == 4 );
+  passed &= ALBERT_CHECK( B[4] == 5 );
+  passed &= ALBERT_CHECK( B[5] == 6 );
+  passed &= ALBERT_CHECK( B[6] == 7 );
+  passed &= ALBERT_CHECK( B[7] == 8 );
+  passed &= ALBERT_CHECK( B[8] == 9 );
+  return passed;
+}
+
+template <class T>
 constexpr static bool contraction(type_args<T> = {})
 {
   bool passed = true;
@@ -482,6 +539,8 @@ constexpr static bool tests(type_args<T> type = {})
   passed &= bind(type);
   passed &= addition(type);
   passed &= subtraction(type);
+  passed &= scalar_multiplication(type);
+  passed &= scalar_division(type);
   passed &= contraction(type);
   passed &= projection(type);
   passed &= trace(type);
