@@ -52,6 +52,38 @@ namespace albert
         return tag_invoke(*this, FWD(obj));
       }
     } dim;
+
+    constexpr inline struct contains_tag
+    {
+      constexpr friend auto tag_invoke(contains_tag, auto&& obj, auto&& tag) noexcept
+        -> bool
+        requires requires { FWD(obj).contains(FWD(tag)); }
+      {
+        return FWD(obj).contains(FWD(tag));
+      }
+
+      constexpr auto operator()(auto&& obj, auto&& tag) const noexcept
+        -> bool
+      {
+        return tag_invoke(*this, FWD(obj), FWD(tag));
+      }
+    } contains;
+
+    constexpr inline struct may_alias_tag
+    {
+      constexpr friend auto tag_invoke(may_alias_tag, auto&& obj, auto&& tag) noexcept
+        -> bool
+        requires requires { FWD(obj).may_alias(FWD(tag)); }
+      {
+        return FWD(obj).may_alias(FWD(tag));
+      }
+
+      constexpr auto operator()(auto&& obj, auto&& tag) const noexcept
+        -> bool
+      {
+        return tag_invoke(*this, FWD(obj), FWD(tag));
+      }
+    } may_alias;
   }
 }
 

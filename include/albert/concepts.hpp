@@ -2,6 +2,7 @@
 #define ALBERT_INCLUDE_CONCEPTS_HPP
 
 #include "albert/cpos.hpp"
+#include "albert/utils.hpp"
 #include <concepts>
 
 namespace albert
@@ -46,9 +47,9 @@ namespace albert
   template <class T>
   concept is_tensor = requires(T t)
   {
-    typename scalar_type<std::remove_cvref_t<T>>::type;
-    { albert::order(t) } -> std::convertible_to<int>;
-    { albert::dim(t) } -> std::convertible_to<int>;
+    typename scalar_type<T>::type;
+    { albert::order(t) } -> std::same_as<int>;
+    { albert::dim(t) } -> std::same_as<int>;
   };
 
   template <class T>
@@ -56,9 +57,13 @@ namespace albert
     typename std::remove_cvref_t<T>::tensor_index_tag;
   };
 
+  inline constexpr auto clang_hack = []{};
+
   template <class T>
   concept is_expression = is_tensor<T> and requires (T t) {
     { albert::outer(t) } -> is_tensor_index;
+    { albert::contains(t, clang_hack) } -> std::same_as<bool>;
+    { albert::may_alias(t, clang_hack) } -> std::same_as<bool>;
   };
 
   template <class T>
@@ -76,17 +81,16 @@ namespace albert
   inline constexpr auto outer_v = std::remove_cvref_t<T>::outer();
 
   template <class T>
-  inline constexpr int order_v = [] {
-    if constexpr (requires { std::remove_cvref_t<T>::order(); }) {
-      return std::remove_cvref_t<T>::order();
-    }
-    else {
-      return std::remove_cvref_t<T>::outer().size();
-    }
-  }();
+  inline constexpr int order_v = std::remove_cvref_t<T>::order();
 
   template <class T>
   inline constexpr int dim_v = std::remove_cvref_t<T>::dim();
+
+  template <class T, auto tag>
+  inline constexpr int contains_v = std::remove_cvref_t<T>::contains(tag);
+
+  template <class T, auto tag>
+  inline constexpr int may_alias_v = std::remove_cvref_t<T>::may_alias(tag);
 
   template <class T>
   inline constexpr int size_v = std::remove_cvref_t<T>::size();
