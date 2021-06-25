@@ -579,31 +579,37 @@ namespace albert
       }
       return (swaps & 1) ? -1 : 1;
     }
-  };
 
-  constexpr auto next_permutation(int parity, auto first, auto last)
-    -> int // -1: odd, 1: even, 0: wrapped
-  {
-    for (auto i = last - 1; i != first;)
+    // Adapted from https://github.com/llvm-mirror/libcxx/blob/master/include/algorithm
+    // and https://en.cppreference.com/w/cpp/algorithm/next_permutation for random
+    // access iterators and parity tracking.
+    constexpr auto next_permutation(int parity, auto first, auto last)
+      -> int // -1: odd, 1: even, 0: wrapped
     {
-      if (auto i1 = i; *--i < *i1)
+      for (auto i = last - 1; i != first;)
       {
-        auto i2 = last;
-        while (*--i2 < *i);
-        std::iter_swap(i, i2);
-        std::reverse(i1, last);
+        // find the last i s.t. i < i + 1
+        if (auto i1 = i; *--i < *i1)
+        {
+          // find the last j s.t. i < j
+          auto i2 = last;
+          while (*--i2 < *i);
+          std::iter_swap(i, i2);
+          std::reverse(i1, last);
 
-        // figure out if I swapped an odd number of elements, and invert the parity if I did
-        int swap = (last - i1 + 2) & 2; // 0 or 2 (random access)
-        parity += 1;                    // 0 or 2
-        parity ^= swap;                 // 0 or 2
-        return parity - 1;              // 1 or -1
+          // just swapped 1 + floor((last - first) / 2) elements, invert parity
+          // if that is an odd number
+          int swap = (last - i1 + 2) & 2; // 0 or 2 (random access)
+          parity += 1;                    // 0 or 2
+          parity ^= swap;                 // 0 or 2
+          return parity - 1;              // 1 or -1
+        }
       }
-    }
 
-    std::reverse(first, last);
-    return 0;
-  }
+      std::reverse(first, last);
+      return 0;
+    }
+  };
 }
 
 #endif // ALBERT_INCLUDE_EXPRESSIONS_HPP
