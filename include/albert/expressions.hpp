@@ -8,6 +8,7 @@
 #include "albert/concepts.hpp"
 #include "albert/solver.hpp"
 #include "albert/utils.hpp"
+#include <bit>
 #include <utility>
 
 namespace albert
@@ -491,6 +492,8 @@ namespace albert
   template <TensorIndex<2> index>
   struct Delta : Bindable<Delta<index>>
   {
+    using scalar_type = int;
+
     constexpr static bool contains(auto)
     {
       return false;
@@ -517,15 +520,17 @@ namespace albert
     }
 
     constexpr static auto evaluate(ScalarIndex<order_v<Delta>> const& i)
-      -> bool
+      -> int
     {
       return i[0] == i[1];
     }
   };
 
   template <is_tensor_index auto index>
-  struct Epsilon : Bindable<Delta<index>>
+  struct LeviCivita : Bindable<LeviCivita<index>>
   {
+    using scalar_type = int;
+
     constexpr static bool contains(auto)
     {
       return false;
@@ -543,7 +548,7 @@ namespace albert
 
     constexpr static auto dim() -> int
     {
-      return 0;
+      return order();
     }
 
     constexpr static auto outer() -> is_tensor_index auto
@@ -551,8 +556,54 @@ namespace albert
       return index;
     }
 
-    constexpr auto evaluate(ScalarIndex<order_v<Epsilon>> const&) const;
+    constexpr auto evaluate(ScalarIndex<order_v<LeviCivita>> const& i) const
+      -> int
+    {
+      static_assert(0 <= order() and order() < 64);
+      uint64_t n = 0;
+      for (auto i : i) {
+        n |= 1u << i;
+      }
+
+      return (std::popcount(n) != order()) ? 0 : parity(i);
+    }
+
+    constexpr auto parity(ScalarIndex<order_v<LeviCivita>> perm) const
+      -> int
+    {
+      int swaps = 0;
+      for (int i = 0, e = std::size(perm); i < e; ++i) {
+        for (int j = std::exchange(perm[i], i); i != j; std::swap(j, perm[j])) {
+          ++swaps;
+        }
+      }
+      return (swaps & 1) ? -1 : 1;
+    }
   };
+
+  constexpr auto next_permutation(int parity, auto first, auto last)
+    -> int // -1: odd, 1: even, 0: wrapped
+  {
+    for (auto i = last - 1; i != first;)
+    {
+      if (auto i1 = i; *--i < *i1)
+      {
+        auto i2 = last;
+        while (*--i2 < *i);
+        std::iter_swap(i, i2);
+        std::reverse(i1, last);
+
+        // figure out if I swapped an odd number of elements, and invert the parity if I did
+        int swap = (last - i1 + 2) & 2; // 0 or 2 (random access)
+        parity += 1;                    // 0 or 2
+        parity ^= swap;                 // 0 or 2
+        return parity - 1;              // 1 or -1
+      }
+    }
+
+    std::reverse(first, last);
+    return 0;
+  }
 }
 
 #endif // ALBERT_INCLUDE_EXPRESSIONS_HPP

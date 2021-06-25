@@ -196,6 +196,52 @@ constexpr static bool contraction(type_args<T> = {})
   passed &= ALBERT_CHECK( B[7] == A2[7] );
   passed &= ALBERT_CHECK( B[8] == A2[8] );
 
+  albert::Tensor<T, 2, 3> C;
+  C(i,k) = A(i,j) * albert::δ(j,k);
+
+  passed &= ALBERT_CHECK( C[0] == A[0] );
+  passed &= ALBERT_CHECK( C[1] == A[1] );
+  passed &= ALBERT_CHECK( C[2] == A[2] );
+  passed &= ALBERT_CHECK( C[3] == A[3] );
+  passed &= ALBERT_CHECK( C[4] == A[4] );
+  passed &= ALBERT_CHECK( C[5] == A[5] );
+  passed &= ALBERT_CHECK( C[6] == A[6] );
+  passed &= ALBERT_CHECK( C[7] == A[7] );
+  passed &= ALBERT_CHECK( C[8] == A[8] );
+
+  albert::Tensor<T, 2, 2> D = {
+    1, 2,
+    3, 4
+  };
+  T b = D(i,j) * albert::ε(i,j);
+  passed &= ALBERT_CHECK( b == -1 );
+
+  albert::Tensor<T, 3, 3> E = {
+    1,  2,  3,
+    4,  5,  6,
+    7,  8,  9,
+
+    10, 11, 12,
+    13, 14, 15,
+    16, 17, 18,
+
+    19, 20, 21,
+    22, 23, 24,
+    25, 26, 27
+  };
+
+  T c = E(i,j,k) * albert::ε(i,j,k);
+
+  // 0: {0, 1, 2} parity  1
+  // 1: {0, 2, 1} parity -1
+  // 2: {1, 0, 2} parity -1
+  // 3: {1, 2, 0} parity  1
+  // 4: {2, 0, 1} parity  1
+  // 5: {2, 1, 0} parity -1
+  T d = E(0,1,2) + E(1,2,0) + E(2,0,1) -
+        E(0,2,1) - E(1,0,2) - E(2,1,0);
+  passed &= ALBERT_CHECK( c == d );
+
   albert::Tensor kronecker = A(i,j) * A(k,l);
 
   passed &= ALBERT_CHECK( kronecker(0,0,0,0) == A(0,0) * A(0,0) );
@@ -396,8 +442,6 @@ constexpr static bool trace(type_args<T> = {})
   return passed;
 }
 
-template <class...> struct print;
-
 template <class T>
 constexpr static bool transposition(type_args<T> = {})
 {
@@ -551,7 +595,8 @@ constexpr static bool tests(type_args<T> type = {})
 
 int main()
 {
-  constexpr bool i = tests(args<int>);
-  constexpr bool f = tests(args<float>);
-  constexpr bool d = tests(args<double>);
+  //constexpr
+  bool i = tests(args<int>);
+  // constexpr bool f = tests(args<float>);
+  // constexpr bool d = tests(args<double>);
 }

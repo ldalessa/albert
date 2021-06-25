@@ -79,26 +79,28 @@ namespace albert
       }
     }
 
-    template <is_tensor A>
-    constexpr auto D(A&& a, is_index auto i, is_index auto... is)
+    // template <is_tensor A>
+    // constexpr auto D(A&& a, is_index auto i, is_index auto... is)
+    // {
+    //   constexpr Index index = (i + ... + is);
+    //   constexpr TensorIndex jindex(index);
+    //   return Partial<decltype(detail::promote(FWD(a))), jindex> { detail::promote(FWD(a)) };
+    // }
+
+    template <is_index i, is_index j>
+    constexpr auto δ(i, j)
     {
-      constexpr Index index = (i + ... + is);
-      constexpr TensorIndex jindex(index);
-      return Partial<decltype(detail::promote(FWD(a))), jindex> { detail::promote(FWD(a)) };
+      constexpr cat_index_type_t<i,j> all = {};
+      constexpr TensorIndex index(all);
+      return Delta<index> {};
     }
 
-    constexpr auto δ(is_index auto i, is_index auto j)
+    template <is_index... is>
+    constexpr auto ε(is...)
     {
-      constexpr Index index = (i + j);
-      constexpr TensorIndex jindex(index);
-      return Delta<jindex> {};
-    }
-
-    constexpr auto ε(is_index auto i, is_index auto... is)
-    {
-      constexpr Index index = (i + ... + is);
-      constexpr TensorIndex jindex(index);
-      return Epsilon<jindex> {};
+      constexpr cat_index_type_t<is...> all = {};
+      constexpr TensorIndex index(all);
+      return LeviCivita<index> {};
     }
 
     template <is_tensor A>
