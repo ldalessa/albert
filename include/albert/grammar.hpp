@@ -35,7 +35,7 @@ namespace albert
                 return Bind(FWD(a), {}, utils::nttp<TensorIndex<0>{}>);
             }
 
-            constexpr auto promote(concepts::scalar auto&& i)
+            constexpr auto promote(concepts::scalar auto i)
                 -> decltype(auto)
             {
                 return Literal(i);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "albert/traits/is_scalar.hpp"
+#include "albert/concepts/scalar.hpp"
 #include <concepts>
 
 namespace albert::traits
@@ -13,8 +13,7 @@ namespace albert::traits
     using scalar_type_t = typename scalar_type<T>::type;
 
     // Pure scalar types are their own scalar types.
-    template <class T>
-    requires (std::integral<T> || std::floating_point<T> || is_scalar<T>::value)
+    template <concepts::scalar T>
     struct scalar_type<T>
     {
         using type = T;

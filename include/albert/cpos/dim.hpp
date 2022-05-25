@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include "albert/concepts/scalar.hpp"
 #include "albert/utils/FWD.hpp"
 #include <tag_invoke/tag_invoke.hpp>
 
@@ -10,7 +10,7 @@ namespace albert
     {
         struct dim
         {
-            constexpr friend auto tag_invoke(dim, auto&& obj) noexcept -> int
+            constexpr friend auto tag_invoke(dim, concepts::scalar auto) noexcept -> int
             {
                 return 0;
             }
