@@ -6,6 +6,7 @@
 #include "albert/concepts.hpp"
 #include "albert/expressions.hpp"
 #include "albert/concepts/index.hpp"
+#include "albert/concepts/scalar.hpp"
 #include "albert/concepts/tensor.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/nttp_args.hpp"
@@ -33,7 +34,7 @@ namespace albert
                 return Bind(FWD(a), {}, utils::nttp<TensorIndex<0>{}>);
             }
 
-            constexpr auto promote(is_scalar auto&& i)
+            constexpr auto promote(concepts::scalar auto&& i)
                 -> decltype(auto)
             {
                 return Literal(i);

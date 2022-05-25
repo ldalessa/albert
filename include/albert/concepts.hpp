@@ -6,12 +6,6 @@
 
 namespace albert
 {
-    // Scalars.
-    template <class T>
-    concept is_scalar = concepts::tensor<T> and (std::integral<T> ||
-                                                 std::floating_point<T> ||
-                                                 traits::is_scalar<T>::value);
-
     inline constexpr auto clang_hack = []{};
 
     template <class T>
