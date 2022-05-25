@@ -6,7 +6,8 @@
 #include "albert/TensorIndex.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
-#include "albert/utils.hpp"
+#include "albert/utils/FWD.hpp"
+#include "albert/utils/nttp_args.hpp"
 #include <ce/cvector.hpp>
 #include <utility>
 
@@ -75,7 +76,7 @@ namespace albert
     /// @param projected Scalars associated with projections (if any).
     /// @param           Helper to specify the `index` CNTTP.
     template <is_tensor B>
-    constexpr Bind(B&& a, ce::cvector<int, M> const& projected, nttp_args<index>)
+    constexpr Bind(B&& a, ce::cvector<int, M> const& projected, utils::nttp_args<index>)
         : a(std::forward<A>(a))
         , _projected(projected)
     {
@@ -249,7 +250,7 @@ namespace albert
 
   /// Deduction guide allows us to infer lvalue reference types.
   template <is_tensor A, is_tensor_index auto index, int M = 0>
-  Bind(A&&, ce::cvector<int, M> const&, nttp_args<index>)
+  Bind(A&&, ce::cvector<int, M> const&, utils::nttp_args<index>)
     -> Bind<A, index>;
 
   template <class T>
@@ -299,7 +300,7 @@ namespace albert
           }
         }(), ...);
 
-        return Bind { *derived(), projected, nttp<index> };
+        return Bind { *derived(), projected, utils::nttp<index> };
       }
     }
 
@@ -330,7 +331,7 @@ namespace albert
           }
         }(), ...);
 
-        return Bind { *derived(), projected, nttp<index> };
+        return Bind { *derived(), projected, utils::nttp<index> };
       }
     }
 
@@ -361,7 +362,7 @@ namespace albert
           }
         }(), ...);
 
-        return Bind { *derived(), projected, nttp<index> };
+        return Bind { *derived(), projected, utils::nttp<index> };
       }
     }
 
@@ -369,21 +370,21 @@ namespace albert
     constexpr auto rebind() const &
       -> decltype(auto)
     {
-      return Bind { *derived(), {}, nttp<index> };
+      return Bind { *derived(), {}, utils::nttp<index> };
     }
 
     template <is_tensor_index auto index>
     constexpr auto rebind() &&
       -> decltype(auto)
     {
-      return Bind { std::move(*derived()), {}, nttp<index> };
+      return Bind { std::move(*derived()), {}, utils::nttp<index> };
     }
 
     template <is_tensor_index auto index>
     constexpr auto rebind() &
       -> decltype(auto)
     {
-      return Bind{ *derived(), {}, nttp<index> };
+      return Bind{ *derived(), {}, utils::nttp<index> };
     }
   };
 }

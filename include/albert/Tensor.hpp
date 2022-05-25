@@ -1,160 +1,160 @@
-#ifndef ALBERT_INCLUDE_TENSOR_HPP
-#define ALBERT_INCLUDE_TENSOR_HPP
+#pragma once
 
 #include "albert/Bind.hpp"
 #include "albert/TensorLayout.hpp"
 #include "albert/TensorStorage.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
-#include "albert/utils.hpp"
+#include "albert/utils/FWD.hpp"
+#include "albert/utils/nttp_args.hpp"
+#include "albert/utils/pow.hpp"
 
 namespace albert
 {
-  template <
-    class T,
-    int Order,
-    int N,
-    auto _tag = []()->void{} // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99902
-    >
-  struct Tensor : Bindable<Tensor<T, Order, N, _tag>>
-  {
-    using Bindable<Tensor<T, Order, N, _tag>>::operator();
-
-    using scalar_type = T;
-
-    constexpr static RowMajor<Order, N> _map = {};
-
-    DenseStorage<T, Order, N> _data;
-
-    constexpr operator scalar_type() const requires(Order == 0)
+    template <
+        class T,
+        int Order,
+        int N,
+        auto _tag = []()->void{} // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99902
+        >
+    struct Tensor : Bindable<Tensor<T, Order, N, _tag>>
     {
-      return _data[0];
-    }
+        using Storage = DenseStorage<T, Order, N>;
+        using Bindable<Tensor<T, Order, N, _tag>>::operator();
 
-    constexpr static auto tag() -> decltype(auto)
-    {
-      return _tag;
-    }
+        using scalar_type = T;
 
-    constexpr static bool contains(auto&& tag)
-    {
-      return std::is_same_v<std::remove_cvref_t<decltype(tag)>,
-                            std::remove_cvref_t<decltype(_tag)>>;
-    }
+        constexpr static RowMajor<Order, N> _map = {};
 
-    constexpr static bool may_alias(auto&&)
-    {
-      return false;
-    }
+        Storage _data;
 
-    constexpr static auto size()
-      -> int
-    {
-      return pow(N, Order);
-    }
+        constexpr operator scalar_type() const requires(Order == 0)
+        {
+            return _data[0];
+        }
 
-    constexpr static auto order()
-      -> int
-    {
-      return Order;
-    }
+        constexpr static auto tag() -> decltype(auto)
+        {
+            return _tag;
+        }
 
-    constexpr static auto dim()
-      -> int
-    {
-      return N;
-    }
+        constexpr static bool contains(auto&& tag)
+        {
+            return std::is_same_v<std::remove_cvref_t<decltype(tag)>,
+                                  std::remove_cvref_t<decltype(_tag)>>;
+        }
 
-    constexpr Tensor() = default;
+        constexpr static bool may_alias(auto&&)
+        {
+            return false;
+        }
 
-    constexpr Tensor(std::convertible_to<T> auto t, std::convertible_to<T> auto... ts)
-      : _data { static_cast<T>(t), static_cast<T>(ts)... }
-    {
-      static_assert(sizeof...(ts) < size());
-    }
+        constexpr static auto size()
+            -> int
+        {
+            return Storage::size();
+        }
 
-    /// Make a copy of the data with a new tag, for both copy construction and
-    /// assignment.
-    constexpr Tensor(Tensor const&) = delete;
-    constexpr auto operator=(Tensor const&) -> Tensor& = delete;
+        constexpr static auto order()
+            -> int
+        {
+            return Order;
+        }
 
-    template <auto other_tag>
-    // requires (other_tag != _tag) https://gcc.gnu.org/bugzilla/show_bug.cgi?id=101155
-    constexpr Tensor(Tensor<T, Order, N, other_tag> const& b)
-        : _data { b._data }
-    {
-    }
+        constexpr static auto dim()
+            -> int
+        {
+            return N;
+        }
 
-    /// Fine to move the tag here.
-    constexpr Tensor(Tensor&&) = default;
-    constexpr auto operator=(Tensor&&) -> Tensor& = default;
+        constexpr Tensor() = default;
 
-    /// Construct a tensor from an expression.
+        constexpr Tensor(std::convertible_to<T> auto t, std::convertible_to<T> auto... ts)
+                : _data { static_cast<T>(t), static_cast<T>(ts)... }
+        {
+            static_assert(sizeof...(ts) < size());
+        }
+
+        /// Make a copy of the data with a new tag, for both copy construction and
+        /// assignment.
+        constexpr Tensor(Tensor const&) = delete;
+        constexpr auto operator=(Tensor const&) -> Tensor& = delete;
+
+        template <auto other_tag>
+        // requires (other_tag != _tag) https://gcc.gnu.org/bugzilla/show_bug.cgi?id=101155
+        constexpr Tensor(Tensor<T, Order, N, other_tag> const& b)
+                : _data { b._data }
+        {
+        }
+
+        /// Fine to move the tag here.
+        constexpr Tensor(Tensor&&) = default;
+        constexpr auto operator=(Tensor&&) -> Tensor& = default;
+
+        /// Construct a tensor from an expression.
+        template <is_expression B>
+        constexpr Tensor(B&& b)
+        {
+            static_assert(order_v<B> == Order, "expression order does not match");
+            Bind(*this, {}, utils::nttp<outer_v<B>>) = FWD(b);
+        }
+
+        template <is_expression B>
+        constexpr auto operator=(B&& b) &
+            -> decltype(auto)
+        {
+            static_assert(order_v<B> == Order, "expression order does not match");
+            return std::move(Bind(*this, {}, utils::nttp<outer_v<B>>) = FWD(b));
+        }
+
+        template <is_expression B>
+        constexpr auto operator=(B&& b) &&
+            -> decltype(auto)
+        {
+            static_assert(order_v<B> == Order, "expression order does not match");
+            return std::move(Bind(std::move(*this), {}, utils::nttp<outer_v<B>>) = FWD(b));
+        }
+
+        /// Normal linear access.
+        constexpr auto operator[](std::integral auto i) const
+            -> decltype(auto)
+        {
+            return _data[i];
+        }
+
+        /// Normal linear access.
+        constexpr auto operator[](std::integral auto i)
+            -> decltype(auto)
+        {
+            return _data[i];
+        }
+
+        /// Multidimensional indexing via aggregate.
+        constexpr auto evaluate(ScalarIndex<Order> const& index) const
+            -> decltype(auto)
+        {
+            int i = _map(index);
+            return _data[i];
+        }
+
+        /// Multidimensional indexing via aggregate.
+        constexpr auto evaluate(ScalarIndex<Order> const& index)
+            -> decltype(auto)
+        {
+            int i = _map(index);
+            return _data[i];
+        }
+    };
+
+    /// Infer a tensor type for an expression.
     template <is_expression B>
-    constexpr Tensor(B&& b)
-    {
-      static_assert(order_v<B> == Order, "expression order does not match");
-      Bind(*this, {}, nttp<outer_v<B>>) = FWD(b);
-    }
+    Tensor(B) -> Tensor<scalar_type_t<B>, order_v<B>, dim_v<B>>;
 
-    template <is_expression B>
-    constexpr auto operator=(B&& b) &
-      -> decltype(auto)
-    {
-      static_assert(order_v<B> == Order, "expression order does not match");
-      return std::move(Bind(*this, {}, nttp<outer_v<B>>) = FWD(b));
-    }
+    /// Update the tag during a copy construction.
+    template <class T, int Order, int N, auto tag>
+    Tensor(Tensor<T, Order, N, tag> const&) -> Tensor<T, Order, N>;
 
-    template <is_expression B>
-    constexpr auto operator=(B&& b) &&
-      -> decltype(auto)
-    {
-      static_assert(order_v<B> == Order, "expression order does not match");
-      return std::move(Bind(std::move(*this), {}, nttp<outer_v<B>>) = FWD(b));
-    }
-
-    /// Normal linear access.
-    constexpr auto operator[](std::integral auto i) const
-      -> decltype(auto)
-    {
-      return _data[i];
-    }
-
-    /// Normal linear access.
-    constexpr auto operator[](std::integral auto i)
-      -> decltype(auto)
-    {
-      return _data[i];
-    }
-
-    /// Multidimensional indexing via aggregate.
-    constexpr auto evaluate(ScalarIndex<Order> const& index) const
-      -> decltype(auto)
-    {
-      int i = _map(index);
-      return _data[i];
-    }
-
-    /// Multidimensional indexing via aggregate.
-    constexpr auto evaluate(ScalarIndex<Order> const& index)
-      -> decltype(auto)
-    {
-      int i = _map(index);
-      return _data[i];
-    }
-  };
-
-  /// Infer a tensor type for an expression.
-  template <is_expression B>
-  Tensor(B) -> Tensor<scalar_type_t<B>, order_v<B>, dim_v<B>>;
-
-  /// Update the tag during a copy construction.
-  template <class T, int Order, int N, auto tag>
-  Tensor(Tensor<T, Order, N, tag> const&) -> Tensor<T, Order, N>;
-
-  /// Retain the tag during a move construction.
-  template <class T, int Order, int N, auto tag>
-  Tensor(Tensor<T, Order, N, tag>&&) -> Tensor<T, Order, N, tag>;
+    /// Retain the tag during a move construction.
+    template <class T, int Order, int N, auto tag>
+    Tensor(Tensor<T, Order, N, tag>&&) -> Tensor<T, Order, N, tag>;
 }
-
-#endif // ALBERT_INCLUDE_TENSOR_HPP

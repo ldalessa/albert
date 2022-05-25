@@ -2,7 +2,6 @@
 #define ALBERT_INCLUDE_CONCEPTS_HPP
 
 #include "albert/cpos.hpp"
-#include "albert/utils.hpp"
 #include <concepts>
 
 namespace albert

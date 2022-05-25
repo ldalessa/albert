@@ -1,7 +1,7 @@
 #ifndef ALBERT_INCLUDE_ALBERT_CPOS_HPP
 #define ALBERT_INCLUDE_ALBERT_CPOS_HPP
 
-#include "albert/utils.hpp"
+#include "albert/utils/FWD.hpp"
 #include <tag_invoke/tag_invoke.hpp>
 
 namespace albert
