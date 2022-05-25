@@ -8,6 +8,7 @@
 #include "albert/evaluate.hpp"
 #include "albert/concepts/all_index.hpp"
 #include "albert/concepts/all_integral_index.hpp"
+#include "albert/concepts/tensor_index.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/nttp_args.hpp"
 #include <ce/cvector.hpp>
@@ -53,7 +54,7 @@ namespace albert
   ///
   /// @param     A The type of the subtree.
   /// @param index The index binding to the subtree.
-  template <is_tensor A, is_tensor_index auto index>
+  template <is_tensor A, concepts::tensor_index auto index>
   struct Bind : Bindable<Bind<A, index>>
   {
     using scalar_type = scalar_type_t<A>;
@@ -251,7 +252,7 @@ namespace albert
   };
 
   /// Deduction guide allows us to infer lvalue reference types.
-  template <is_tensor A, is_tensor_index auto index, int M = 0>
+  template <is_tensor A, concepts::tensor_index auto index, int M = 0>
   Bind(A&&, ce::cvector<int, M> const&, utils::nttp_args<index>)
     -> Bind<A, index>;
 
@@ -368,21 +369,21 @@ namespace albert
       }
     }
 
-    template <is_tensor_index auto index>
+    template <concepts::tensor_index auto index>
     constexpr auto rebind() const &
       -> decltype(auto)
     {
       return Bind { *derived(), {}, utils::nttp<index> };
     }
 
-    template <is_tensor_index auto index>
+    template <concepts::tensor_index auto index>
     constexpr auto rebind() &&
       -> decltype(auto)
     {
       return Bind { std::move(*derived()), {}, utils::nttp<index> };
     }
 
-    template <is_tensor_index auto index>
+    template <concepts::tensor_index auto index>
     constexpr auto rebind() &
       -> decltype(auto)
     {

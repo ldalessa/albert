@@ -5,6 +5,7 @@
 #include "albert/ScalarIndex.hpp"
 #include "albert/cmath.hpp"
 #include "albert/concepts.hpp"
+#include "albert/concepts/tensor_index.hpp"
 #include "albert/solver.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/max.hpp"
@@ -51,7 +52,7 @@ namespace albert
             return utils::max(dim_v<A>, dim_v<B>);
         }
 
-        constexpr static auto outer() -> is_tensor_index auto
+        constexpr static auto outer() -> concepts::tensor_index auto
         {
             return outer_v<A>;
         }
@@ -160,7 +161,7 @@ namespace albert
             return utils::max(dim_v<A>, dim_v<B>);
         }
 
-        constexpr static auto outer() -> is_tensor_index auto
+        constexpr static auto outer() -> concepts::tensor_index auto
         {
             constexpr TensorIndex a = outer_v<A>;
             constexpr TensorIndex b = outer_v<B>;
@@ -246,7 +247,7 @@ namespace albert
             return dim_v<A>;
         }
 
-        constexpr static auto outer() -> is_tensor_index auto
+        constexpr static auto outer() -> concepts::tensor_index auto
         {
             return outer_v<A>;
         }
@@ -290,7 +291,7 @@ namespace albert
             return dim_v<A>;
         }
 
-        constexpr static auto outer() -> is_tensor_index auto
+        constexpr static auto outer() -> concepts::tensor_index auto
         {
             return outer_v<A>;
         }
@@ -301,7 +302,7 @@ namespace albert
         }
     };
 
-    template <is_expression A, is_tensor_index auto index>
+    template <is_expression A, concepts::tensor_index auto index>
     struct Partial : Bindable<Partial<A, index>>
     {
         using scalar_type = scalar_type_t<A>;
@@ -341,7 +342,7 @@ namespace albert
             return dim_v<A>;
         }
 
-        constexpr static auto outer() -> is_tensor_index auto
+        constexpr static auto outer() -> concepts::tensor_index auto
         {
             return (outer_v<A> + index).exclusive();
         }
@@ -381,7 +382,7 @@ namespace albert
             return dim_v<A>;
         }
 
-        constexpr static auto outer() -> is_tensor_index auto
+        constexpr static auto outer() -> concepts::tensor_index auto
         {
             return outer_v<A>;
         }
@@ -427,7 +428,7 @@ namespace albert
                 return dim_v<A>;
             }
 
-            constexpr static auto outer() -> is_tensor_index auto
+            constexpr static auto outer() -> concepts::tensor_index auto
             {
                 return outer_v<A>;
             }
@@ -526,7 +527,7 @@ namespace albert
         }
     };
 
-    template <is_tensor_index auto index>
+    template <concepts::tensor_index auto index>
     struct LeviCivita : Bindable<LeviCivita<index>>
     {
         using scalar_type = int;
@@ -551,7 +552,7 @@ namespace albert
             return order();
         }
 
-        constexpr static auto outer() -> is_tensor_index auto
+        constexpr static auto outer() -> concepts::tensor_index auto
         {
             return index;
         }

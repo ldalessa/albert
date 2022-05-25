@@ -1,6 +1,7 @@
 #pragma once
 
 #include "albert/concepts.hpp"
+#include "albert/concepts/tensor_index.hpp"
 #include "albert/utils/nttp_args.hpp"
 #include <ce/cvector.hpp>
 
@@ -59,7 +60,7 @@ namespace albert
             return _data[i];
         }
 
-        template <is_tensor_index auto from, is_tensor_index auto to>
+        template <concepts::tensor_index auto from, concepts::tensor_index auto to>
         constexpr auto select(utils::nttp_args<from, to>) const -> ScalarIndex<to.size()>
         {
             static_assert(from.size() == size());
@@ -93,7 +94,7 @@ namespace albert
             return out;
         }
 
-        template <is_tensor_index auto from, is_tensor_index auto to>
+        template <concepts::tensor_index auto from, concepts::tensor_index auto to>
         constexpr friend auto select(ScalarIndex const& in) -> ScalarIndex<to.size()>
         {
             return in.select(utils::nttp<from, to>);

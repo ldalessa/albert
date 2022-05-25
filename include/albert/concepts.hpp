@@ -46,18 +46,11 @@ namespace albert
 
     // Scalars.
     template <class T>
-    concept is_scalar = is_tensor<T> and (std::integral<T> || std::floating_point<T> || traits::is_scalar<T>::value);
-
-    template <class T>
-    concept is_tensor_index = requires {
-        typename std::remove_cvref_t<T>::tensor_index_tag;
-    };
-
-    inline constexpr auto clang_hack = []{};
+    concept is_scalar = is_tensor<T> and (std::integral<T> || std::floating_point<T> || traits::is_scalar<T>::value);inline constexpr auto clang_hack = []{};
 
     template <class T>
     concept is_expression = is_tensor<T> and requires (T t) {
-        { t.outer() } -> is_tensor_index;
+        { t.outer() };
         { t.contains(clang_hack) } -> std::same_as<bool>;
         { t.may_alias(clang_hack) } -> std::same_as<bool>;
     };
