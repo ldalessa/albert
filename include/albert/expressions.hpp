@@ -6,6 +6,7 @@
 #include "albert/cmath.hpp"
 #include "albert/solver.hpp"
 #include "albert/concepts.hpp"
+#include "albert/concepts/expression.hpp"
 #include "albert/concepts/tensor_index.hpp"
 #include "albert/traits/scalar_type.hpp"
 #include "albert/utils/FWD.hpp"
@@ -15,7 +16,7 @@
 
 namespace albert
 {
-    template <is_expression A, is_expression B>
+    template <concepts::expression A, concepts::expression B>
     struct Addition
     {
         A a;
@@ -71,7 +72,7 @@ namespace albert
         }
     };
 
-    template <is_expression A, is_expression B>
+    template <concepts::expression A, concepts::expression B>
     struct Sum : Addition<A, B>, Bindable<Sum<A, B>>
     {
         using Addition<A, B>::Addition;
@@ -92,10 +93,10 @@ namespace albert
         }
     };
 
-    template <is_expression A, is_expression B>
+    template <concepts::expression A, concepts::expression B>
     Sum(A, B) -> Sum<A, B>;
 
-    template <is_expression A, is_expression B>
+    template <concepts::expression A, concepts::expression B>
     struct Diff : Addition<A, B>, Bindable<Diff<A, B>>
     {
         using Addition<A, B>::Addition;
@@ -116,10 +117,10 @@ namespace albert
         }
     };
 
-    template <is_expression A, is_expression B>
+    template <concepts::expression A, concepts::expression B>
     Diff(A, B) -> Diff<A, B>;
 
-    template <is_expression A, is_expression B>
+    template <concepts::expression A, concepts::expression B>
     struct Product : Bindable<Product<A, B>>
     {
         using scalar_type = decltype(std::declval<traits::scalar_type_t<A>>() * std::declval<traits::scalar_type_t<B>>());
@@ -208,7 +209,7 @@ namespace albert
     ///            // -> A() * (1 / 2);
     ///            // -> A() * 0;
     ///            // -> 0;
-    template <is_expression A, std::integral B>
+    template <concepts::expression A, std::integral B>
     struct Ratio : Bindable<Ratio<A, B>>
     {
         using scalar_type = decltype(std::declval<traits::scalar_type_t<A>>() * std::declval<traits::scalar_type_t<B>>());
@@ -260,7 +261,7 @@ namespace albert
         }
     };
 
-    template <is_expression A>
+    template <concepts::expression A>
     struct Negate : Bindable<Negate<A>>
     {
         using scalar_type = traits::scalar_type_t<A>;
@@ -303,7 +304,7 @@ namespace albert
         }
     };
 
-    template <is_expression A, concepts::tensor_index auto index>
+    template <concepts::expression A, concepts::tensor_index auto index>
     struct Partial : Bindable<Partial<A, index>>
     {
         using scalar_type = traits::scalar_type_t<A>;
@@ -351,7 +352,7 @@ namespace albert
         constexpr auto evaluate(ScalarIndex<order_v<Partial>> const&) const;
     };
 
-    template <is_expression A>
+    template <concepts::expression A>
     struct Inverse : Bindable<Inverse<A>>
     {
         using scalar_type = traits::scalar_type_t<A>;
@@ -391,7 +392,7 @@ namespace albert
         constexpr auto evaluate(ScalarIndex<order_v<Inverse>> const&) const;
     };
 
-    template <is_expression A> requires(order_v<A> == 0)
+    template <concepts::expression A> requires(order_v<A> == 0)
         struct Inverse<A> : Bindable<Inverse<A>>
         {
             using scalar_type = traits::scalar_type_t<A>;

@@ -5,13 +5,14 @@
 #include "albert/TensorLayout.hpp"
 #include "albert/TensorStorage.hpp"
 #include "albert/concepts.hpp"
+#include "albert/concepts/expression.hpp"
 #include "albert/traits/scalar_type.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/max.hpp"
 
 namespace albert
 {
-    template <is_expression A, is_expression B>
+    template <concepts::expression A, concepts::expression B>
     [[gnu::noinline]]
     constexpr auto evaluate(A&& a, B&& b, auto&& op) -> decltype(auto)
     {
@@ -36,7 +37,7 @@ namespace albert
         return FWD(a);
     }
 
-    template <is_expression A, is_expression B>
+    template <concepts::expression A, concepts::expression B>
     [[gnu::noinline]]
     constexpr auto evaluate_via_temp(A&& a, B&& b, auto&& op) -> decltype(auto)
     {

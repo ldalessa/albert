@@ -5,6 +5,7 @@
 #include "albert/cmath.hpp"
 #include "albert/concepts.hpp"
 #include "albert/expressions.hpp"
+#include "albert/concepts/expression.hpp"
 #include "albert/concepts/index.hpp"
 #include "albert/concepts/scalar.hpp"
 #include "albert/concepts/tensor.hpp"
@@ -21,7 +22,7 @@ namespace albert
         /// integrals, floating point values, and unbound tensors.
         namespace detail
         {
-            constexpr auto promote(is_expression auto&& a)
+            constexpr auto promote(concepts::expression auto&& a)
                 -> decltype(auto)
             {
                 return FWD(a);

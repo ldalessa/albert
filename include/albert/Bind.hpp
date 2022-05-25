@@ -5,6 +5,7 @@
 #include "albert/TensorIndex.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
+#include "albert/concepts/expression.hpp"
 #include "albert/concepts/all_index.hpp"
 #include "albert/concepts/all_integral_index.hpp"
 #include "albert/concepts/tensor.hpp"
@@ -32,9 +33,9 @@ namespace albert
     /// Bind nodes look like:
     ///
     ///     concepts::index i, j, k, l;              // indices
-    ///     concepts::tensor A;                      // actual tensor
-    ///     is_expression B;                         // matrix expression
-    ///     is_expression C;                         // vector expression
+    ///     concepts::tensor A;                      // actual 2nd order tensor
+    ///     concepts::expression B;                  // 2nd order expression
+    ///     concepts::expression C;                  // 1st order expression
     ///     auto bind = A(i, j);                     // basic bind
     ///     auto bind = A(i, i);                     // trace
     ///     auto bind = A(1, i);                     // projection
@@ -90,14 +91,14 @@ namespace albert
         }
 
         /// Default copy and move will prevent implicit operator= generation, which
-        /// means that the `is_expression` version will match _all_ instances of
+        /// means that the `concepts::expression` version will match _all_ instances of
         /// Bind::operator=.
         /// @{
         constexpr Bind(Bind const&) = default;
         constexpr Bind(Bind&&) = default;
         /// @}
 
-        template <is_expression B>
+        template <concepts::expression B>
         constexpr auto operator=(B&& b)
             -> Bind&
         {
@@ -106,7 +107,7 @@ namespace albert
             });
         }
 
-        template <is_expression B>
+        template <concepts::expression B>
         constexpr auto operator+=(B&& b)
             -> Bind&
         {
@@ -115,7 +116,7 @@ namespace albert
             });
         }
 
-        constexpr auto operator-=(is_expression auto && b)
+        constexpr auto operator-=(concepts::expression auto && b)
             -> Bind&
         {
             return assign(FWD(b), [](auto&& a, auto&&b) {
@@ -123,7 +124,7 @@ namespace albert
             });
         }
 
-        template <is_expression B>
+        template <concepts::expression B>
         constexpr auto assign(B&& b, auto&& op)
             -> Bind&
         {

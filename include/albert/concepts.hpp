@@ -1,20 +1,9 @@
 #pragma once
 
-#include "albert/concepts/tensor.hpp"
-#include "albert/traits/is_scalar.hpp"
 #include <concepts>
 
 namespace albert
 {
-    inline constexpr auto clang_hack = []{};
-
-    template <class T>
-    concept is_expression = concepts::tensor<T> and requires (T t) {
-        { t.outer() };
-        { t.contains(clang_hack) } -> std::same_as<bool>;
-        { t.may_alias(clang_hack) } -> std::same_as<bool>;
-    };
-
     template <class T>
     inline constexpr auto outer_v = std::remove_cvref_t<T>::outer();
 

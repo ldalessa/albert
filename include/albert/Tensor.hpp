@@ -5,6 +5,7 @@
 #include "albert/TensorStorage.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
+#include "albert/concepts/expression.hpp"
 #include "albert/traits/scalar_type.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/nttp_args.hpp"
@@ -93,14 +94,14 @@ namespace albert
         constexpr auto operator=(Tensor&&) -> Tensor& = default;
 
         /// Construct a tensor from an expression.
-        template <is_expression B>
+        template <concepts::expression B>
         constexpr Tensor(B&& b)
         {
             static_assert(order_v<B> == Order, "expression order does not match");
             Bind(*this, {}, utils::nttp<outer_v<B>>) = FWD(b);
         }
 
-        template <is_expression B>
+        template <concepts::expression B>
         constexpr auto operator=(B&& b) &
             -> decltype(auto)
         {
@@ -108,7 +109,7 @@ namespace albert
             return std::move(Bind(*this, {}, utils::nttp<outer_v<B>>) = FWD(b));
         }
 
-        template <is_expression B>
+        template <concepts::expression B>
         constexpr auto operator=(B&& b) &&
             -> decltype(auto)
         {
@@ -148,7 +149,7 @@ namespace albert
     };
 
     /// Infer a tensor type for an expression.
-    template <is_expression B>
+    template <concepts::expression B>
     Tensor(B) -> Tensor<traits::scalar_type_t<B>, order_v<B>, dim_v<B>>;
 
     /// Update the tag during a copy construction.

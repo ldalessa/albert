@@ -2,6 +2,7 @@
 #define ALBERT_INCLUDE_CMATH_HPP
 
 #include "albert/Bind.hpp"
+#include "albert/concepts/expression.hpp"
 #include "albert/traits/scalar_type.hpp"
 #include <cmath>
 
@@ -40,7 +41,7 @@ namespace albert
   template <CMathTag tag>
   constexpr inline cmath_tag<tag> cmath_tag_v = {};
 
-  template <is_expression A, CMathTag tag>
+  template <concepts::expression A, CMathTag tag>
   struct CMath : Bindable<CMath<A, tag>>
   {
     static_assert(POW < tag and tag < CMATH_TAG_MAX);
@@ -135,7 +136,7 @@ namespace albert
     }
   };
 
-  template <is_expression A, is_expression B, CMathTag tag>
+  template <concepts::expression A, concepts::expression B, CMathTag tag>
   struct CMath2 : Bindable<CMath<A, tag>>
   {
     using scalar_type = traits::scalar_type_t<A>;
