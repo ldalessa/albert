@@ -5,6 +5,7 @@
 #include "albert/cmath.hpp"
 #include "albert/concepts.hpp"
 #include "albert/expressions.hpp"
+#include "albert/concepts/index.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/nttp_args.hpp"
 #include <concepts>
@@ -80,14 +81,14 @@ namespace albert
         }
 
         // template <is_tensor A>
-        // constexpr auto D(A&& a, is_index auto i, is_index auto... is)
+        // constexpr auto D(A&& a, concepts::index auto i, concepts::index auto... is)
         // {
         //   constexpr Index index = (i + ... + is);
         //   constexpr TensorIndex jindex(index);
         //   return Partial<decltype(detail::promote(FWD(a))), jindex> { detail::promote(FWD(a)) };
         // }
 
-        template <is_index i, is_index j>
+        template <concepts::index i, concepts::index j>
         constexpr auto δ(i, j)
         {
             constexpr cat_index_type_t<i,j> all = {};
@@ -95,7 +96,7 @@ namespace albert
             return Delta<index> {};
         }
 
-        template <is_index... is>
+        template <concepts::index... is>
         constexpr auto ε(is...)
         {
             constexpr cat_index_type_t<is...> all = {};

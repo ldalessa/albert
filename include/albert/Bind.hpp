@@ -6,6 +6,8 @@
 #include "albert/TensorIndex.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
+#include "albert/concepts/all_index.hpp"
+#include "albert/concepts/all_integral_index.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/nttp_args.hpp"
 #include <ce/cvector.hpp>
@@ -27,7 +29,7 @@ namespace albert
   ///
   /// Bind nodes look like:
   ///
-  ///     is_index i, j, k, l;                     // indices
+  ///     concepts::index i, j, k, l;              // indices
   ///     is_tensor A;                             // actual matrix tensor
   ///     is_expression B;                         // matrix expression
   ///     is_expression C;                         // vector expression
@@ -274,13 +276,13 @@ namespace albert
     }
 
     template <class... Is>
-    requires (all_index<Is...>)
+    requires (concepts::all_index<Is...>)
     constexpr auto operator()(Is... is) const &
       -> decltype(auto)
     {
       static_assert(sizeof...(Is) == Order, "Tensor index must be fully specified");
 
-      if constexpr (all_integral_index<Is...>) {
+      if constexpr (concepts::all_integral_index<Is...>) {
         ScalarIndex<Order> index(is...);
         return derived()->evaluate(index);
       }
@@ -305,13 +307,13 @@ namespace albert
     }
 
     template <class... Is>
-    requires (all_index<Is...>)
+    requires (concepts::all_index<Is...>)
     constexpr auto operator()(Is... is) &&
       -> decltype(auto)
     {
       static_assert(sizeof...(Is) == Order, "Tensor index must be fully specified");
 
-      if constexpr (all_integral_index<Is...>) {
+      if constexpr (concepts::all_integral_index<Is...>) {
         ScalarIndex<Order> index(is...);
         return derived()->evaluate(index);
       }
@@ -336,13 +338,13 @@ namespace albert
     }
 
     template <class... Is>
-    requires (all_index<Is...>)
+    requires (concepts::all_index<Is...>)
     constexpr auto operator()(Is... is) &
       -> decltype(auto)
     {
       static_assert(sizeof...(Is) == Order, "Tensor index must be fully specified");
 
-      if constexpr (all_integral_index<Is...>) {
+      if constexpr (concepts::all_integral_index<Is...>) {
         ScalarIndex<Order> index(is...);
         return derived()->evaluate(index);
       }
