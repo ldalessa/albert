@@ -1,6 +1,6 @@
 #pragma once
 
-#include "albert/concepts/scalar.hpp"
+#include "albert/traits/is_scalar.hpp"
 #include "albert/utils/FWD.hpp"
 #include <tag_invoke/tag_invoke.hpp>
 
@@ -10,7 +10,9 @@ namespace albert
     {
         struct dim
         {
-            constexpr friend auto tag_invoke(dim, concepts::scalar auto) noexcept -> int
+            template <class T>
+            constexpr friend auto tag_invoke(dim, T) noexcept -> int
+                requires (traits::is_scalar_v<T>)
             {
                 return 0;
             }

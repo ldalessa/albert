@@ -1,12 +1,10 @@
 #pragma once
 
 #include "albert/traits/is_scalar.hpp"
+#include "albert/concepts/tensor.hpp"
 
 namespace albert::concepts
 {
     template <class T>
-    concept scalar = (
-            std::integral<std::remove_cvref_t<T>> ||
-            std::floating_point<std::remove_cvref_t<T>> ||
-            traits::is_scalar<T>::value);
+    concept scalar = tensor<T> and traits::is_scalar_v<T>;
 }
