@@ -1,55 +1,21 @@
 #pragma once
 
-#include "albert/cpos/dim.hpp"
-#include "albert/cpos/order.hpp"
+#include "albert/concepts/tensor.hpp"
+#include "albert/traits/is_scalar.hpp"
 #include <concepts>
 
 namespace albert
 {
-    namespace traits
-    {
-        // Allow types other than integral and floating_point to advertise that
-        // they're scalars (e.g., a rational class)
-        template <class>
-        struct is_scalar : std::false_type {};
-    }
-
-    // Extract the scalar type of some expression type.
-    template <class T>
-    struct scalar_type;
-
-    template <class T>
-    using scalar_type_t = typename scalar_type<T>::type;
-
-    template <class T>
-    requires requires { typename std::remove_cvref_t<T>::scalar_type; }
-    struct scalar_type<T>
-    {
-        using type = typename std::remove_cvref_t<T>::scalar_type;
-    };
-
-    template <class T>
-    requires (std::integral<T> || std::floating_point<T> || traits::is_scalar<T>::value)
-        struct scalar_type<T>
-        {
-            using type = T;
-        };
-
-    /// For our purposes, a tensor is anything with a order and dimension.
-    template <class T>
-    concept is_tensor = requires(T t)
-        {
-            typename scalar_type<T>::type;
-            { albert::order(t) } -> std::same_as<int>;
-            { albert::dim(t) } -> std::same_as<int>;
-        };
-
     // Scalars.
     template <class T>
-    concept is_scalar = is_tensor<T> and (std::integral<T> || std::floating_point<T> || traits::is_scalar<T>::value);inline constexpr auto clang_hack = []{};
+    concept is_scalar = concepts::tensor<T> and (std::integral<T> ||
+                                                 std::floating_point<T> ||
+                                                 traits::is_scalar<T>::value);
+
+    inline constexpr auto clang_hack = []{};
 
     template <class T>
-    concept is_expression = is_tensor<T> and requires (T t) {
+    concept is_expression = concepts::tensor<T> and requires (T t) {
         { t.outer() };
         { t.contains(clang_hack) } -> std::same_as<bool>;
         { t.may_alias(clang_hack) } -> std::same_as<bool>;

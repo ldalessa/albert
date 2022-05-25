@@ -5,6 +5,7 @@
 #include "albert/TensorStorage.hpp"
 #include "albert/concepts.hpp"
 #include "albert/evaluate.hpp"
+#include "albert/traits/scalar_type.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/nttp_args.hpp"
 #include "albert/utils/pow.hpp"
@@ -148,7 +149,7 @@ namespace albert
 
     /// Infer a tensor type for an expression.
     template <is_expression B>
-    Tensor(B) -> Tensor<scalar_type_t<B>, order_v<B>, dim_v<B>>;
+    Tensor(B) -> Tensor<traits::scalar_type_t<B>, order_v<B>, dim_v<B>>;
 
     /// Update the tag during a copy construction.
     template <class T, int Order, int N, auto tag>

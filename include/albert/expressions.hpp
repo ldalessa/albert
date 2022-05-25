@@ -4,9 +4,10 @@
 #include "albert/Index.hpp"
 #include "albert/ScalarIndex.hpp"
 #include "albert/cmath.hpp"
+#include "albert/solver.hpp"
 #include "albert/concepts.hpp"
 #include "albert/concepts/tensor_index.hpp"
-#include "albert/solver.hpp"
+#include "albert/traits/scalar_type.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/max.hpp"
 #include <bit>
@@ -75,7 +76,7 @@ namespace albert
     {
         using Addition<A, B>::Addition;
 
-        using scalar_type = decltype(std::declval<scalar_type_t<A>>() + std::declval<scalar_type_t<B>>());
+        using scalar_type = decltype(std::declval<traits::scalar_type_t<A>>() + std::declval<traits::scalar_type_t<B>>());
 
         /// Evaluate into a scalar.
         constexpr operator scalar_type() const requires (order_v<Sum> == 0)
@@ -99,7 +100,7 @@ namespace albert
     {
         using Addition<A, B>::Addition;
 
-        using scalar_type = decltype(std::declval<scalar_type_t<A>>() - std::declval<scalar_type_t<B>>());
+        using scalar_type = decltype(std::declval<traits::scalar_type_t<A>>() - std::declval<traits::scalar_type_t<B>>());
 
         /// Evaluate into a scalar.
         constexpr operator scalar_type() const requires (order_v<Diff> == 0)
@@ -121,7 +122,7 @@ namespace albert
     template <is_expression A, is_expression B>
     struct Product : Bindable<Product<A, B>>
     {
-        using scalar_type = decltype(std::declval<scalar_type_t<A>>() * std::declval<scalar_type_t<B>>());
+        using scalar_type = decltype(std::declval<traits::scalar_type_t<A>>() * std::declval<traits::scalar_type_t<B>>());
 
         A a;
         B b;
@@ -210,7 +211,7 @@ namespace albert
     template <is_expression A, std::integral B>
     struct Ratio : Bindable<Ratio<A, B>>
     {
-        using scalar_type = decltype(std::declval<scalar_type_t<A>>() * std::declval<scalar_type_t<B>>());
+        using scalar_type = decltype(std::declval<traits::scalar_type_t<A>>() * std::declval<traits::scalar_type_t<B>>());
 
         A a;
         B b;
@@ -262,7 +263,7 @@ namespace albert
     template <is_expression A>
     struct Negate : Bindable<Negate<A>>
     {
-        using scalar_type = scalar_type_t<A>;
+        using scalar_type = traits::scalar_type_t<A>;
 
         A a;
 
@@ -305,7 +306,7 @@ namespace albert
     template <is_expression A, concepts::tensor_index auto index>
     struct Partial : Bindable<Partial<A, index>>
     {
-        using scalar_type = scalar_type_t<A>;
+        using scalar_type = traits::scalar_type_t<A>;
 
         A a;
 
@@ -353,7 +354,7 @@ namespace albert
     template <is_expression A>
     struct Inverse : Bindable<Inverse<A>>
     {
-        using scalar_type = scalar_type_t<A>;
+        using scalar_type = traits::scalar_type_t<A>;
 
         A a;
 
@@ -393,7 +394,7 @@ namespace albert
     template <is_expression A> requires(order_v<A> == 0)
         struct Inverse<A> : Bindable<Inverse<A>>
         {
-            using scalar_type = scalar_type_t<A>;
+            using scalar_type = traits::scalar_type_t<A>;
 
             A a;
 
@@ -443,7 +444,7 @@ namespace albert
     template <class T>
     struct Literal
     {
-        using scalar_type = scalar_type_t<T>;
+        using scalar_type = traits::scalar_type_t<T>;
 
         T x;
 

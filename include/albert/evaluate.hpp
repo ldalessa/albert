@@ -5,6 +5,7 @@
 #include "albert/TensorLayout.hpp"
 #include "albert/TensorStorage.hpp"
 #include "albert/concepts.hpp"
+#include "albert/traits/scalar_type.hpp"
 #include "albert/utils/FWD.hpp"
 #include "albert/utils/max.hpp"
 
@@ -46,7 +47,7 @@ namespace albert
         constexpr TensorIndex r = outer_v<B>;
         constexpr int Order = order_v<A>;
         constexpr int N = utils::max(dim_v<A>, dim_v<B>);
-        using T = scalar_type_t<A>;
+        using T = traits::scalar_type_t<A>;
 
         constexpr RowMajor<Order, N> map = {};
         DenseStorage<T, Order, N> temp;
